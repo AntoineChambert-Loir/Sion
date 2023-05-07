@@ -1,0 +1,8 @@
+[package]
+name = "sion"
+version = "0.1"
+lean_version = "leanprover-community/lean:3.50.3"
+path = "src"
+
+[dependencies]
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "3905fa80e62c0898131285baab35559fbc4e5cda"}
