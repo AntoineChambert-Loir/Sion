@@ -1,8 +1,8 @@
 /- # Formalization of the von Neumann Sion theorem 
 
-## Statement
+## Statements
 
-Let X and Y be compact convex subsets of topological vector spaces E and F, 
+`sion_exists` : Let X and Y be compact convex subsets of topological vector spaces E and F, 
 f : X × Y → ℝ be a function such that 
 - for all x, f(x, ⬝) is upper semicontinuous and quasiconcave
 - for all y, f(⬝, y) is lower semicontinuous and quasiconvex
