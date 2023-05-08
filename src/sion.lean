@@ -276,46 +276,30 @@ end
 end quasiconcave
 
 
-namespace upper_semicontinuous
-
+section quasiconvex
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
-variables {X : set E} (hX : is_compact X)
-variables {f : E → ℝ} (hf : upper_semicontinuous_on f X)
-
-include hf hX
-
-/-- An upper semicontinuous function is bounded above on a compact set. -/
-lemma bdd_above_on.is_compact : bdd_above (f '' X) := 
-begin
-
-  suffices : bdd_above ((with_lower_topology.to_lower ∘ f) '' X),
-
-end
-
-
-/-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
-lemma is_compact.exists_forall_ge  [nonempty X]: 
-  ∃ (a ∈ X), ∀ x ∈ X, f x ≤ f a := sorry 
+variable {f : E → ℝ}
 
 /-- A quasiconvex and upper semicontinuous function attains its lower bound on a nonempty compact set -/
-lemma is_compact.exists_forall_le_of_quasiconvex 
-  (ne_X : X.nonempty) (hfc : quasiconvex_on ℝ X f):
-  ∃ (a ∈ X), ∀ x ∈ X, f a ≤ f x := sorry  
+lemma is_compact.exists_forall_le_of_quasiconvex {s : set E}
+  (ne_s : s.nonempty) (hs : is_compact s)
+  (hfs : upper_semicontinuous_on f s) (hfc : quasiconvex_on ℝ s f):
+  ∃ (a ∈ s), ∀ x ∈ s, f a ≤ f x := sorry  
 
 /-- A quasiconvex and upper semicontinuous function is bounded below on a compact set -/
-lemma bdd_below_on.is_compact_of_quasiconvex 
-  (hfc : quasiconvex_on ℝ X f) : bdd_below (f '' X) := 
+lemma bdd_below_on.is_compact_of_quasiconvex  {s : set E}
+  (hs : is_compact s)
+  (hfs : upper_semicontinuous_on f s) (hfc : quasiconvex_on ℝ s f): bdd_below (f '' s) := 
 begin
-  cases X.eq_empty_or_nonempty with e_X ne_X,
-  { rw e_X, simp only [set.image_empty, bdd_below_empty], },
-  { obtain ⟨a, ha, hax⟩ := is_compact.exists_forall_le_of_quasiconvex hX hf ne_X hfc,
+  cases s.eq_empty_or_nonempty with e_s ne_s,
+  { rw e_s, simp only [set.image_empty, bdd_below_empty], },
+  { obtain ⟨a, ha, hax⟩ := is_compact.exists_forall_le_of_quasiconvex ne_s hs hfs hfc,
     use f a, rintros t ⟨x, hx, rfl⟩, exact hax x hx, },
 end
 
 
-end upper_semicontinuous
-end upper_semicontinuous
+end quasiconvex
 
 namespace sion
 
