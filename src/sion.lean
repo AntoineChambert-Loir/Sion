@@ -1,4 +1,10 @@
-/- # Formalization of the von Neumann Sion theorem 
+
+import analysis.convex.basic
+import topology.semicontinuous
+import analysis.convex.quasiconvex
+import topology.order.lower_topology
+
+/-! # Formalization of the von Neumann Sion theorem 
 
 ## Statements
 
@@ -14,7 +20,8 @@ f(x, ⬝) is concave, f(⬝, y) is convex.
 As a particular case, one get the von Neumann theorem where
 f is bilinear and E, F are finite dimensional.
 
-We follow the proof of Komiya (1988)
+We follow the proof of Komiya (1988). 
+
 ## References
 
 - Neumann, John von (1928). « Zur Theorie der Gesellschaftsspiele ». Mathematische Annalen 100 (1): 295‑320. https://doi.org/10.1007/BF01448847.
@@ -23,14 +30,48 @@ We follow the proof of Komiya (1988)
 
 - Komiya, Hidetoshi (1988). « Elementary Proof for Sion’s Minimax Theorem ». Kodai Mathematical Journal 11 (1). https://doi.org/10.2996/kmj/1138038812.
 
+
+## Comments on the proof
+
+For the moment, the proof is made difficult by the absence of results in mathlib
+pertaining to semicontinuous functions, and possibly to continuity properties of convex functions.
+
+One option would be to first do the proof for continuous functions 
+by `sorry`ing all the results that we need in the semicontinuous case. 
+
+
 -/
 
-import analysis.convex.basic
-import topology.semicontinuous
-import analysis.convex.quasiconvex
-import topology.order.lower_topology
-
 section semicontinuity
+
+/- 
+
+- `lower_semicontinuous.is_compact.exists_forall_le` : We prove that lower semicontinuous functions attain their lower bound on a nonempty compact set.
+
+- `lower_semicontinuous.bdd_below_on.is_compact` : As a consequence, a lower semicontinuous function on a compact set is bounded below. 
+
+We then prove the opposite results for upper semicontinuous functions :
+
+- `upper_semicontinuous.is_compact.exists_forall_ge`
+
+- `bdd_above_on.is_compact` 
+
+The proofs follow Bourbaki, *General Topology*, chapter 4, §6, n°2. 
+I do them twice (copy paste worked well), without trying to get ones
+from the other by passing to the opposite order on `β`. 
+
+However, they could also be done using the general machinery already in mathlib,
+namely proving that a function `f: α → β` is upper semicontinuous iff it is continuous 
+when `β` is endowed with `with_lower_topology β`, and characterizing
+the compact sets of `with_lower_topology β` as those which have a maximal element. 
+
+I tried to do so but quickly bumped on missing instances, 
+such as `complete_linear_order_topology (with_lower_topology β)`. 
+
+In any case, `with_upper_topology` is missing, so we should also play with
+the opposite order.  
+
+-/
 
 variables {α : Type*} [topological_space α]
 variables  {β : Type*}
@@ -130,34 +171,6 @@ end lower_semicontinuous
 
 section upper_semicontinuous
 
-/- 
-Attempts to do the job without reproving anything
-
-but one gets to prove [complete_linear_order_topology (with_lower_topology β)]
-
-open with_lower_topology
-namespace with_lower_topology
-
-lemma to_lower_continous : 
-  continuous (to_lower : β → with_lower_topology β):= sorry
-
-lemma of_lower_upper_semicontinous : 
-  upper_semicontinuous (of_lower : with_lower_topology β → β):= sorry
-
-lemma upper_semicontinuous_iff_to_lower_comp_continuous_at {a : α} :
-  upper_semicontinuous_at f a ↔ continuous_at (to_lower ∘ f) a := 
-sorry
-
-lemma upper_semicontinuous_iff_to_lower_comp_continuous :
-  upper_semicontinuous f ↔ continuous (to_lower ∘ f) := sorry
-
-lemma upper_semicontinuous_iff_to_lower_comp_continuous_on {s : set α} :
-  upper_semicontinuous_on f s ↔ continuous_on (to_lower ∘ f) s := sorry
-
-end with_lower_topology
-
-/- In any case, one can reproduce Bourbaki's proof… -/ -/
-
 
 /-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
 theorem upper_semicontinuous.is_compact.exists_forall_ge 
@@ -252,6 +265,12 @@ end semicontinuity
 
 section quasiconcave
 
+/- We prove that a lsc quasiconcave function on a nonempty compact convex set 
+is bounded above and attains its upper bound. 
+
+Maybe the result is false, I don't know. 
+
+-/
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
 variable {f : E → ℝ}
@@ -277,6 +296,15 @@ end quasiconcave
 
 
 section quasiconvex
+
+
+/- We prove that a usc quasiconvex function on a nonempty compact convex set 
+is bounded below and attains its lower bound. 
+
+Maybe the result is false, I don't know. 
+
+-/
+
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
 variable {f : E → ℝ}
@@ -297,7 +325,6 @@ begin
   { obtain ⟨a, ha, hax⟩ := is_compact.exists_forall_le_of_quasiconvex ne_s hs hfs hfc,
     use f a, rintros t ⟨x, hx, rfl⟩, exact hax x hx, },
 end
-
 
 end quasiconvex
 
@@ -337,4 +364,37 @@ sorry
 end
 
 example : upper_semicontinuous_on (λ x, supr (λ y : Y, f x y)) X := sorry
+
+
+
+
+
+
+#exit 
+
+Attempts to do the job without reproving anything
+
+but one gets to prove [complete_linear_order_topology (with_lower_topology β)]
+
+open with_lower_topology
+namespace with_lower_topology
+
+lemma to_lower_continous : 
+  continuous (to_lower : β → with_lower_topology β):= sorry
+
+lemma of_lower_upper_semicontinous : 
+  upper_semicontinuous (of_lower : with_lower_topology β → β):= sorry
+
+lemma upper_semicontinuous_iff_to_lower_comp_continuous_at {a : α} :
+  upper_semicontinuous_at f a ↔ continuous_at (to_lower ∘ f) a := 
+sorry
+
+lemma upper_semicontinuous_iff_to_lower_comp_continuous :
+  upper_semicontinuous f ↔ continuous (to_lower ∘ f) := sorry
+
+lemma upper_semicontinuous_iff_to_lower_comp_continuous_on {s : set α} :
+  upper_semicontinuous_on f s ↔ continuous_on (to_lower ∘ f) s := sorry
+
+end with_lower_topology
+
 
