@@ -71,6 +71,15 @@ such as `complete_linear_order_topology (with_lower_topology β)`.
 In any case, `with_upper_topology` is missing, so we should also play with
 the opposite order.  
 
+Another difficulty is the type of order we want to impose on β.
+Ultimately, it has to be `conditionally_complete_linear_order β`, to allow for `ℝ`,
+but it would simplify the proofs to do it for `complete_linear_order β`,
+and adding `⊤` and `⊥` at the end if needed. 
+Inded, for `conditionally_complete_linear_order β`, the `supr` and `infi` only
+do what one expects under additional `bdd_above` or `bdd_below` assumptions
+which are painful to check each time.
+(Moreover, the `simp` lemmas may be missing. )
+
 -/
 
 variables {α : Type*} [topological_space α]
@@ -341,12 +350,44 @@ variable (f : E → F → ℝ)
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
+
+def sion_exists_left := ∃ (a ∈ X), ∀ (x ∈ X),
+supr (λ y : Y, f a y) ≤ supr (λ y : Y, f x y)
+
+def sion_exists_right := ∃ (b ∈ Y), ∀ (y ∈ Y),
+infi (λ x : X, f x y) ≤ infi (λ x : X, f x b)
+
 include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY kY
 
-theorem sion_exists : ∃ (a ∈ X) (b ∈ Y),
-f a b = infi (λ x : X, supr (λ y : Y, f x y)) 
-∧ f a b = supr (λ y : Y, infi (λ x : X, f x y)) := 
-sorry
+/-- The minimax theorem, in the saddle point form -/
+theorem sion_exists : ∃ (a ∈ X) (b ∈ Y), 
+(∀ (x ∈ X), supr (λ y : Y, f a y) ≤ supr (λ y : Y, f x y))
+∧ (∀ (y ∈ Y),  infi (λ x : X, f x y) ≤ infi (λ x : X, f x b))
+∧ (supr (λ y : Y, f a y) =  infi (λ x : X, f x b)) := sorry 
+
+/-- The minimax theorem, in the inf-sup equals sup-inf form -/
+theorem sion : 
+infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 
+begin
+  obtain ⟨a, ha, b, hb, haf, hbf, hab⟩ := sion_exists X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+  haveI : nonempty X := ne_X.coe_sort,
+  haveI : nonempty Y := ne_Y.coe_sort,
+  suffices : infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, f a y),
+  suffices that : supr (λ y : Y, infi (λ x : X, f x y)) = infi (λ x : X, f x b),
+  rw this, rw hab, rw that, 
+  { apply le_antisymm, 
+    apply csupr_le, rintro ⟨y, hy⟩, exact hbf y hy, 
+    rw ← subtype.coe_mk b hb, 
+--    apply le_csupr _ ,  does not work!
+    sorry, },
+  { apply le_antisymm, rw ← subtype.coe_mk a ha, 
+    apply cinfi_le _, 
+    -- bdd_below is not automatic
+    sorry,
+    apply le_cinfi, rintro ⟨x, hx⟩, exact haf x hx, },
+end
+
+
 
 example  : bdd_below ((λ x, supr (λ y : Y, f x y)) '' X) := 
 begin
@@ -369,13 +410,15 @@ example : upper_semicontinuous_on (λ x, supr (λ y : Y, f x y)) X := sorry
 
 
 
+end sion
 
-#exit 
+section junk
 
+/- 
 Attempts to do the job without reproving anything
 
 but one gets to prove [complete_linear_order_topology (with_lower_topology β)]
-
+-/
 open with_lower_topology
 namespace with_lower_topology
 
@@ -398,3 +441,4 @@ lemma upper_semicontinuous_iff_to_lower_comp_continuous_on {s : set α} :
 end with_lower_topology
 
 
+end junk
