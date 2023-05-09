@@ -337,8 +337,6 @@ end
 
 end quasiconvex
 
-namespace sion
-
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
 variables 
@@ -347,70 +345,82 @@ variables (X : set E) (ne_X : X.nonempty) (cX : convex ℝ X) (kX : is_compact X
 variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y) (kY : is_compact Y)
 
 variable (f : E → F → ℝ) 
+
+def is_saddle_point_on {a : E} (ha : a ∈ X) {b : F} (hb : b ∈Y) :=
+(∀ x ∈ X, f a b ≤ f x b) ∧ (∀ y ∈ Y, f a y ≤ f a b) 
+
+namespace sion 
+
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
+include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY kY
 
-def sion_exists_left := ∃ (a ∈ X), ∀ (x ∈ X),
-supr (λ y : Y, f a y) ≤ supr (λ y : Y, f x y)
+lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := sorry
 
-def sion_exists_right := ∃ (b ∈ Y), ∀ (y ∈ Y),
-infi (λ x : X, f x y) ≤ infi (λ x : X, f x b)
+lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
+
+/-- The minimax theorem, in the saddle point form -/
+theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
+  is_saddle_point_on X Y f ha hb := sorry
+
+end sion 
+
+variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
+variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
 include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY kY
 
-/-- The minimax theorem, in the saddle point form -/
-theorem sion_exists : ∃ (a ∈ X) (b ∈ Y), 
-(∀ (x ∈ X), supr (λ y : Y, f a y) ≤ supr (λ y : Y, f x y))
-∧ (∀ (y ∈ Y),  infi (λ x : X, f x y) ≤ infi (λ x : X, f x b))
-∧ (supr (λ y : Y, f a y) =  infi (λ x : X, f x b)) := sorry 
+example (s t : set ℝ) (h : s ⊆ t) (ht : bdd_below t): bdd_below s :=
+bdd_below.mono h ht
 
+-- There are some `sorry` because we need to add the proof that the
+-- function is bounded on X Y 
 /-- The minimax theorem, in the inf-sup equals sup-inf form -/
 theorem sion : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 
 begin
-  obtain ⟨a, ha, b, hb, haf, hbf, hab⟩ := sion_exists X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
   haveI : nonempty X := ne_X.coe_sort,
   haveI : nonempty Y := ne_Y.coe_sort,
-  suffices : infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, f a y),
-  suffices that : supr (λ y : Y, infi (λ x : X, f x y)) = infi (λ x : X, f x b),
-  rw this, rw hab, rw that, 
-  { apply le_antisymm, 
-    apply csupr_le, rintro ⟨y, hy⟩, exact hbf y hy, 
-    rw ← subtype.coe_mk b hb, 
---    apply le_csupr _ ,  does not work!
+  obtain ⟨m, hm⟩ := sion.is_bdd_below X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+  obtain ⟨M, hM⟩ := sion.is_bdd_above X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+  simp only [lower_bounds, upper_bounds, set.mem_range, prod.exists, set_coe.exists, subtype.coe_mk, exists_prop,
+  forall_exists_index, and_imp, set.mem_set_of_eq] at hm hM,
+  apply le_antisymm,
+
+  { obtain ⟨a, ha, b, hb, hax, hby⟩ := sion.exists_saddle_point X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+    suffices : f a b ≤ supr (λ y : Y, infi (λ x : X, f x y)), 
+    apply le_trans _ this,
+    refine le_trans (cinfi_le _ (⟨a, ha⟩ : X)) _, 
+    -- bdd_below is not automatic :-(
+    { dsimp only [bdd_below, lower_bounds],
+      use m,
+      simp only [set.mem_range, set_coe.exists, subtype.coe_mk, forall_exists_index, forall_apply_eq_imp_iff₂, set.mem_set_of_eq], 
+      intros x hx,
+      refine le_trans _ (le_csupr _ ⟨b, hb⟩),
+      exact hm x hx b hb rfl, 
+      dsimp only [bdd_above, upper_bounds],
+      use M,
+      simp only [set.mem_range, set_coe.exists, subtype.coe_mk, forall_exists_index, forall_apply_eq_imp_iff₂, set.mem_set_of_eq],
+      intros y hy, exact hM x hx y hy rfl, },
+    apply csupr_le, 
+    rintro ⟨y, hy⟩, exact hby y hy,
+    refine le_trans _ (le_csupr _ (⟨b, hb⟩ : Y)),
+    apply le_cinfi,
+    rintro ⟨x, hx⟩, exact hax x hx,
+    -- bdd_above is not automatic :-( 
     sorry, },
-  { apply le_antisymm, rw ← subtype.coe_mk a ha, 
-    apply cinfi_le _, 
-    -- bdd_below is not automatic
-    sorry,
-    apply le_cinfi, rintro ⟨x, hx⟩, exact haf x hx, },
+
+  { apply csupr_le, rintro ⟨y, hy⟩,
+    apply le_cinfi, rintro ⟨x, hx⟩, 
+    refine le_trans (cinfi_le _ (⟨x, hx⟩ : X)) _,
+    sorry, -- bdd_below is not automatic
+--    rw subtype.coe_mk,
+    refine @le_csupr _ _ _  (λ t : Y, f x t)  _ (⟨y, hy⟩ : Y),
+    sorry, -- bdd_above is not automatic 
+    }, 
+  
 end
-
-
-
-example  : bdd_below ((λ x, supr (λ y : Y, f x y)) '' X) := 
-begin
-  obtain ⟨b, hb⟩ := ne_Y, 
-  suffices : bdd_below ((λ x, f x b) '' X),
-  obtain ⟨m, hm⟩ := this, rw mem_lower_bounds at hm,
-  simp_rw set.mem_image at hm, 
-  use m,
-  rintros t ⟨x, hx, rfl⟩,
-  dsimp,
-  suffices : m ≤ f x ↑(⟨b, hb⟩ : Y), 
-  refine le_trans this _, 
-
-sorry 
-end
-
-example : upper_semicontinuous_on (λ x, supr (λ y : Y, f x y)) X := sorry
-
-
-
-
-
-end sion
 
 section junk
 
