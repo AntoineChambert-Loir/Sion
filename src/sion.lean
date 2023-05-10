@@ -8,7 +8,7 @@ import topology.order.lower_topology
 
 ## Statements
 
-`sion_exists` : Let X and Y be compact convex subsets of topological vector spaces E and F, 
+`sion_exists` : Let X and Y be convex subsets of topological vector spaces E and F, X being moreover compact, and let
 f : X × Y → ℝ be a function such that 
 - for all x, f(x, ⬝) is upper semicontinuous and quasiconcave
 - for all y, f(⬝, y) is lower semicontinuous and quasiconvex
@@ -337,12 +337,14 @@ end
 
 end quasiconvex
 
+section sion 
+
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
 variables 
  {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [has_continuous_add F] [has_continuous_smul ℝ F]
 variables (X : set E) (ne_X : X.nonempty) (cX : convex ℝ X) (kX : is_compact X)
-variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y) (kY : is_compact Y)
+variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y)
 
 variable (f : E → F → ℝ) 
 
@@ -354,7 +356,7 @@ namespace sion
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY kY
+include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
 
 lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := sorry
 
@@ -369,7 +371,7 @@ end sion
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY kY
+include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
 
 example (s t : set ℝ) (h : s ⊆ t) (ht : bdd_below t): bdd_below s :=
 bdd_below.mono h ht
@@ -382,13 +384,13 @@ infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)
 begin
   haveI : nonempty X := ne_X.coe_sort,
   haveI : nonempty Y := ne_Y.coe_sort,
-  obtain ⟨m, hm⟩ := sion.is_bdd_below X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
-  obtain ⟨M, hM⟩ := sion.is_bdd_above X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+  obtain ⟨m, hm⟩ := sion.is_bdd_below X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
+  obtain ⟨M, hM⟩ := sion.is_bdd_above X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
   simp only [lower_bounds, upper_bounds, set.mem_range, prod.exists, set_coe.exists, subtype.coe_mk, exists_prop,
   forall_exists_index, and_imp, set.mem_set_of_eq] at hm hM,
   apply le_antisymm,
 
-  { obtain ⟨a, ha, b, hb, hax, hby⟩ := sion.exists_saddle_point X ne_X cX kX Y ne_Y cY kY f hfx hfx' hfy hfy',
+  { obtain ⟨a, ha, b, hb, hax, hby⟩ := sion.exists_saddle_point X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
     suffices : f a b ≤ supr (λ y : Y, infi (λ x : X, f x y)), 
     apply le_trans _ this,
     refine le_trans (cinfi_le _ (⟨a, ha⟩ : X)) _, 
@@ -422,6 +424,8 @@ begin
   
 end
 
+end sion 
+
 section junk
 
 /- 
@@ -429,6 +433,11 @@ Attempts to do the job without reproving anything
 
 but one gets to prove [complete_linear_order_topology (with_lower_topology β)]
 -/
+
+variables {α β : Type*} [topological_space α] [preorder β] [topological_space β] [order_topology β]
+
+variable (f : α → β)
+
 open with_lower_topology
 namespace with_lower_topology
 
