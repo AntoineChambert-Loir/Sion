@@ -20,7 +20,13 @@ lemma is_compact.exists_forall_ge_of_quasiconcave {s : set E}
   (ne_s : s.nonempty) (hs : is_compact s) 
   (hfs : lower_semicontinuous_on f s) (hfc : quasiconcave_on ℝ s f):
   ∃ (a ∈ s), ∀ x ∈ s, f x ≤ f a := sorry  
+/- 
+let T = sup f x, for x ∈ s, 
+assume f does not attain its upper bound
+consider the sets  U t := f ⁻¹' (set.Ici t), for t < T.
+Since f is lower semicontinuous, U t is closed
 
+-/
 /-- A quasiconcave and lower semicontinuous function is bounded above on a compact set -/
 lemma bdd_above_on.is_compact_of_quasiconcave  {s : set E} (hs : is_compact s)
   (hfs : lower_semicontinuous_on f s)(hfc : quasiconcave_on ℝ s f) : 

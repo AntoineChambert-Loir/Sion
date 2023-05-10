@@ -60,6 +60,20 @@ namespace ereal_sion
 
 variable (f : E → F → ereal) 
 
+/-- The trivial minimax inequality -/
+lemma sup_inf_le_inf_sup : 
+supr (λ y : Y, infi (λ x : X, f x y)) ≤ infi (λ x : X, supr (λ y : Y, f x y)) := 
+begin
+  rw supr_le_iff,
+  rintro ⟨y, hy⟩,
+  rw le_infi_iff,
+  rintro ⟨x, hx⟩,
+  refine le_trans (infi_le _ (⟨x,hx⟩ : X)) _, 
+  -- je ne comprends pas pourquoi le_supr ne permet pas de conclure
+  refine le_trans _ (le_supr _ (⟨y, hy⟩: Y)),
+  exact le_refl (f x y),
+end
+
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
@@ -88,9 +102,25 @@ lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := s
 
 lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
 
+/- The theorem is probably wrong without the additional hypothesis
+that Y is compact. Indeed, if the image of (λ y, f x y) is not bounded above,
+then supr is defined as 0, while the theorem should interpret it as infinity.
+
+Possibilities : 
+
+- add hypotheses that guarantee the bdd_above condition
+- replace the infimum on (x : X) by the infimum on the subtype of X
+consisting of x such that (λ y, f x y) is bounded above.
+(If that subtype is empty, the left hand side is +infinity for mathematicians,
+but 0 for Lean… what about the rhs?)
+
+-/
+
 theorem minimax : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := sorry
 
+/- Here, one will need compactness on Y — otherwise, no hope that
+the saddle point exists… -/
 /-- The minimax theorem, in the saddle point form -/
 theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
   is_saddle_point_on X Y f ha hb := sorry
