@@ -362,24 +362,30 @@ lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := s
 
 lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
 
-/-- The minimax theorem, in the saddle point form -/
-theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
-  is_saddle_point_on X Y f ha hb := sorry
-
-end sion 
-
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
 include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
 
-example (s t : set ℝ) (h : s ⊆ t) (ht : bdd_below t): bdd_below s :=
-bdd_below.mono h ht
+lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
+  {t : ℝ} (ht : t < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
+  ∃ y0 ∈ Y, t < infi (λ x : X, f x y0) := sorry
+
+lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : t < infi (λ x : X, supr (λ y : s, f x y))) : 
+  ∃ y0 ∈ Y,  t < infi (λ x : X, f x y0) := sorry
+
+
+theorem minimax : 
+infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := sorry
+
+/-- The minimax theorem, in the saddle point form -/
+theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
+  is_saddle_point_on X Y f ha hb := sorry
 
 -- There are some `sorry` because we need to add the proof that the
 -- function is bounded on X Y 
 /-- The minimax theorem, in the inf-sup equals sup-inf form -/
-theorem sion : 
+theorem minimax' : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 
 begin
   haveI : nonempty X := ne_X.coe_sort,
