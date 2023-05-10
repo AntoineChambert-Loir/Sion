@@ -362,11 +362,6 @@ lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := s
 
 lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
 
-variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
-variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
-
-include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
-
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : t < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
   ∃ y0 ∈ Y, t < infi (λ x : X, f x y0) := sorry
@@ -431,6 +426,8 @@ begin
 end
 
 end sion 
+
+end sion
 
 section junk
 
