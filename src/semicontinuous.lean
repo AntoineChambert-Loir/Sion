@@ -27,6 +27,7 @@ the compact sets of `with_lower_topology β` as those which have a maximal eleme
 
 I tried to do so but quickly bumped on missing instances, 
 such as `complete_linear_order_topology (with_lower_topology β)`. 
+And indeed, `with_lower_topology β` does ***not*** satisfy `order_topology` !
 
 In any case, `with_upper_topology` is missing, so we should also play with
 the opposite order.  
@@ -42,10 +43,15 @@ which are painful to check each time.
 
 -/
 
-variables {α : Type*} [topological_space α]
-variables  {β : Type*}
-  [topological_space β] [conditionally_complete_linear_order β] [order_topology β] 
-variable {f : α → β}
+open_locale filter topology
+open set filter
+
+lemma is_total.directed {α : Type*} {ι : Sort*} (r : α → α → Prop) [is_total α r] (f : ι → α) :
+  directed r f :=
+λ i j, or.cases_on (total_of r (f i) (f j)) (λ h, ⟨j, h, refl _⟩) (λ h, ⟨i, refl _, h⟩)
+
+variables {β α : Type*} [topological_space α] [topological_space β] {f : α → β}
+variables [linear_order β] [order_closed_topology β] 
 
 section lower_semicontinuous
 
@@ -65,190 +71,71 @@ lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
 sorry
 
 /-- A lower semicontinuous function attains its lowers bound on a nonempty compact set -/
-theorem lower_semicontinuous.is_compact.exists_forall_le {s : set α} 
+theorem lower_semicontinuous.exists_forall_le_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : lower_semicontinuous_on f s) : 
   ∃ (a ∈ s), ∀ x ∈ s, f a ≤ f x := 
 begin
-  suffices : filter.is_basis s (λ a, s ∩ f ⁻¹' (set.Iic (f a))),
-  let ℱ := this.filter,
-  haveI : this.filter.ne_bot, 
-  { rw filter.ne_bot_iff, 
-    intro h,
-    suffices : ∅ ∈ this.filter, 
-    rw filter.is_basis.mem_filter_iff at this,
-    obtain ⟨a, ha, ha'⟩ := this,
-    rw set.subset_empty_iff at ha',
-    apply set.not_mem_empty a, rw ← ha',  
-    split, exact ha, 
-    rw set.mem_preimage, rw set.mem_Iic,
-    rw h, exact filter.mem_bot, },
+  haveI : nonempty α := ⟨ne_s.some⟩,
+  haveI : nonempty s := ⟨⟨ne_s.some, ne_s.some_spec⟩⟩,
 
-  suffices that : this.filter ≤ filter.principal s, 
-  obtain ⟨a, ha, h⟩ := hs that, 
+  let φ : β → filter α := λ b, 𝓟 (s ∩ f ⁻¹' (Iic b)),
+  let ℱ : filter α := ⨅ a : s, φ (f a), 
+  haveI : ℱ.ne_bot,
+  { refine infi_ne_bot_of_directed _ _,
+    { refine directed.mono_comp ge (λ b₁ b₂ hb, _) (is_total.directed _ _), 
+      refine principal_mono.mpr (inter_subset_inter_right _ (preimage_mono $ Iic_subset_Iic.mpr hb)) },
+    { intro x,
+      have : (pure x : filter α) ≤ φ (f x) := le_principal_iff.mpr ⟨x.2, le_refl (f x)⟩,
+      exact ne_bot_of_le this } },
+
+  have hℱs : ℱ ≤ 𝓟 s,
+    from infi_le_of_le ⟨ne_s.some, ne_s.some_spec⟩ (principal_mono.mpr $ inter_subset_left _ _),
+
+  have hℱ : ∀ x ∈ s, ∀ᶠ y in ℱ, f y ≤ f x,
+    from λ x hx, mem_infi_of_mem ⟨x, hx⟩ (inter_subset_right _ _), 
   
-  use a, use ha, 
-  rw cluster_pt_iff at h,
-  intros x hx,
-  by_contradiction hax, simp only [not_le] at hax,
-  suffices hU : sᶜ ∪ (f ⁻¹' (set.Ioi (f x))) ∈ nhds a,  
-  suffices hV : s ∩ (f ⁻¹' (set.Iic (f x))) ∈ this.filter,
-  obtain ⟨y, hy, ⟨hys, hy'⟩⟩ := h hU hV,
-  rw [set.mem_preimage, set.mem_Iic] at hy', 
-  cases hy with hy hy,
-  { exact hy hys, },
-  rw [set.mem_preimage, set.mem_Ioi] at hy,
-  exact not_le.mpr hy hy',
-  { -- hV 
-  rw filter.is_basis.mem_filter_iff,
-  use x, use hx, },
-  { -- hU 
-    dsimp [lower_semicontinuous_on, lower_semicontinuous_within_at] at hf,
-    specialize hf a ha _ hax, 
-    obtain ⟨𝒩, h𝒩, t, ht, hh⟩ := hf, 
-    simp at ht, 
-    apply filter.mem_of_superset h𝒩, 
-    rw set.union_comm, rw set.subset_union_compl_iff_inter_subset, 
-    refine set.subset.trans (set.inter_subset_inter_right 𝒩 ht) _,
-    rw ← hh,
-    apply eq.subset,
-    refl,},
-  { -- that: this.filter ≤ filter.principal s
-    simp only [filter.le_principal_iff],
-    rw filter.is_basis.mem_filter_iff ,
-    obtain ⟨a, ha⟩ := ne_s, 
-    exact ⟨a, ha, set.inter_subset_left s _⟩, },
-  { -- this: filter.is_basis
-    apply filter.is_basis.mk,
-    exact ne_s, 
-    intros a a' ha ha', 
-    cases le_total (f a) (f a'), 
-    { use a, use ha, 
-      apply eq.subset, apply symm,
-      rw set.inter_eq_left_iff_subset,
-      apply set.inter_subset_inter_right, 
-      apply set.preimage_mono,
-      rw set.Iic_subset_Iic, exact h, }, 
-    { use a', use ha', 
-      apply eq.subset, apply symm, 
-      rw set.inter_eq_right_iff_subset ,
-      apply set.inter_subset_inter_right, 
-      apply set.preimage_mono,
-      rw set.Iic_subset_Iic, exact h, }, },
+  obtain ⟨a, ha, h⟩ := hs hℱs, 
+  letI : (𝓝 a ⊓ ℱ).ne_bot := h,
+  refine ⟨a, ha, λ x hx, le_of_not_lt $ λ hxa, _⟩,
+  suffices : ∀ᶠ x in 𝓝 a ⊓ ℱ, false,
+    by rwa eventually_const at this,
+  filter_upwards [(hf a ha (f x) hxa).filter_mono (inf_le_inf_left _ hℱs),
+    (hℱ x hx).filter_mono (inf_le_right : 𝓝 a ⊓ ℱ ≤ ℱ)] 
+    using λ y h₁ h₂, not_le_of_lt h₁ h₂,
 end
 
 /-- A lower semicontinuous function is bounded above on a compact set. -/
-lemma lower_semicontinuous.bdd_below_on.is_compact [nonempty β] {s : set α} (hs : is_compact s) (hf : lower_semicontinuous_on f s): 
+lemma lower_semicontinuous.bdd_below_of_is_compact [nonempty β] {s : set α} (hs : is_compact s) (hf : lower_semicontinuous_on f s): 
   bdd_below (f '' s) := 
 begin
   cases s.eq_empty_or_nonempty,
   { rw h, simp only [set.image_empty],
-    have : ∃ (b : β), true, exact (exists_const β).mpr trivial, 
-    obtain ⟨b,_⟩ := this,
-    use b, simp only [lower_bounds_empty], },
-  obtain ⟨a, ha, has⟩ := lower_semicontinuous.is_compact.exists_forall_le h hs hf, 
-  use f a, rintros b ⟨x, hx, rfl⟩, exact has x hx,
+    exact bdd_below_empty },
+  { obtain ⟨a, ha, has⟩ := lower_semicontinuous.exists_forall_le_of_is_compact h hs hf, 
+    use f a, rintros b ⟨x, hx, rfl⟩, exact has x hx },
 end
-
 
 end lower_semicontinuous
 
 section upper_semicontinuous
 
-
 /-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
-theorem upper_semicontinuous.is_compact.exists_forall_ge 
-{s : set α} (hs : is_compact s) (ne_s : s.nonempty) (hf : upper_semicontinuous_on f s): 
+theorem upper_semicontinuous.exists_forall_ge_of_is_compact {s : set α} 
+  (ne_s : s.nonempty) (hs : is_compact s)
+  (hf : upper_semicontinuous_on f s): 
   ∃ (a ∈ s), ∀ x ∈ s, f x ≤ f a := 
-begin
-  suffices : filter.is_basis s (λ a, s ∩ f ⁻¹' (set.Ici (f a))),
-  let ℱ := this.filter,
-  haveI : this.filter.ne_bot, 
-  { rw filter.ne_bot_iff, 
-    intro h,
-    suffices : ∅ ∈ this.filter, 
-    rw filter.is_basis.mem_filter_iff at this,
-    obtain ⟨a, ha, ha'⟩ := this,
-    rw set.subset_empty_iff at ha',
-    apply set.not_mem_empty a, rw ← ha',  
-    split, exact ha, 
-    rw set.mem_preimage, rw set.mem_Ici,
-    rw h, exact filter.mem_bot, },
-
-  suffices that : this.filter ≤ filter.principal s, 
-  obtain ⟨a, ha, h⟩ := hs that, 
-  
-  use a, use ha, 
-  rw cluster_pt_iff at h,
-  intros x hx,
-  by_contradiction hax, simp only [not_le] at hax,
-  suffices hU : sᶜ ∪ (f ⁻¹' (set.Iio (f x))) ∈ nhds a,  
-  suffices hV : s ∩ (f ⁻¹' (set.Ici (f x))) ∈ this.filter,
-  obtain ⟨y, hy, ⟨hys, hy'⟩⟩ := h hU hV,
-  rw [set.mem_preimage, set.mem_Ici] at hy', 
-  cases hy with hy hy,
-  { exact hy hys, },
-  rw [set.mem_preimage, set.mem_Iio] at hy,
-  exact not_le.mpr hy hy',
-  { -- hV 
-  rw filter.is_basis.mem_filter_iff,
-  use x, use hx, },
-  { -- hU 
-    dsimp [upper_semicontinuous_on, upper_semicontinuous_within_at] at hf,
-    specialize hf a ha _ hax, 
-    obtain ⟨𝒩, h𝒩, t, ht, hh⟩ := hf, 
-    simp at ht, 
-    apply filter.mem_of_superset h𝒩, 
-    rw set.union_comm, rw set.subset_union_compl_iff_inter_subset, 
-    refine set.subset.trans (set.inter_subset_inter_right 𝒩 ht) _,
-    rw ← hh,
-    apply eq.subset,
-    refl,},
-  { -- that: this.filter ≤ filter.principal s
-    simp only [filter.le_principal_iff],
-    rw filter.is_basis.mem_filter_iff ,
-    obtain ⟨a, ha⟩ := ne_s, 
-    exact ⟨a, ha, set.inter_subset_left s _⟩, },
-  { -- this: filter.is_basis
-    apply filter.is_basis.mk,
-    exact ne_s, 
-    intros a a' ha ha', 
-    cases le_total (f a) (f a'), 
-    { use a', use ha', 
-      apply eq.subset, apply symm, 
-      rw set.inter_eq_right_iff_subset ,
-      apply set.inter_subset_inter_right, 
-      apply set.preimage_mono,
-      rw set.Ici_subset_Ici, exact h, },
-    { use a, use ha, 
-      apply eq.subset, apply symm,
-      rw set.inter_eq_left_iff_subset,
-      apply set.inter_subset_inter_right, 
-      apply set.preimage_mono,
-      rw set.Ici_subset_Ici, exact h, }, },
-end
+@lower_semicontinuous.exists_forall_le_of_is_compact (βᵒᵈ) _ _ _ _ _ _ s ne_s hs hf
 
 /-- An upper semicontinuous function is bounded above on a compact set. -/
-lemma bdd_above_on.is_compact [nonempty β] {s : set α}
+lemma upper_semicontinuous.bdd_above_of_is_compact [nonempty β] {s : set α}
   (hf : upper_semicontinuous_on f s) (hs : is_compact s): 
   bdd_above (f '' s) := 
-begin
-  cases s.eq_empty_or_nonempty,
-  { rw h, simp only [set.image_empty],
-    have : ∃ (b : β), true, exact (exists_const β).mpr trivial, 
-    obtain ⟨b,_⟩ := this,
-    use b, simp only [upper_bounds_empty], },
-  
-  obtain ⟨a, ha, has⟩ := upper_semicontinuous.is_compact.exists_forall_ge hs h hf, 
-  use f a, rintros b ⟨x, hx, rfl⟩, exact has x hx,
-end
+@lower_semicontinuous.bdd_below_of_is_compact (βᵒᵈ) _ _ _ _ _ _ _ s hs hf
 
 end upper_semicontinuous
 
 end semicontinuity
-
-
-
 
 section junk
 
