@@ -2,6 +2,7 @@
 import .semicontinuous
 import .concavexity
 
+import analysis.convex.topology
 import data.real.ereal
 
 
@@ -44,10 +45,15 @@ by `sorry`ing all the results that we need in the semicontinuous case.
 -/
 
 
+/- ereal is missing the `densely_ordered` instance ! -/
+
+lemma ereal.exists_between {a b : ereal} (h : a < b) : ∃ (c : ereal), a < c ∧ c < b := sorry
+
+
 variables 
- {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
+ {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
 variables 
- {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [has_continuous_add F] [has_continuous_smul ℝ F]
+ {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [topological_add_group F] [has_continuous_smul ℝ F]
 variables (X : set E) (ne_X : X.nonempty) (cX : convex ℝ X) (kX : is_compact X)
 variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y)
 
@@ -60,14 +66,94 @@ namespace ereal_sion
 
 variable (f : E → F → ereal) 
 
+/-- The trivial minimax inequality -/
+lemma sup_inf_le_inf_sup : 
+supr (λ y : Y, infi (λ x : X, f x y)) ≤ infi (λ x : X, supr (λ y : Y, f x y)) := 
+begin
+  rw supr_le_iff,
+  rintro ⟨y, hy⟩,
+  rw le_infi_iff,
+  rintro ⟨x, hx⟩,
+  refine le_trans (infi_le _ (⟨x,hx⟩ : X)) _, 
+  -- je ne comprends pas pourquoi le_supr ne permet pas de conclure
+  refine le_trans _ (le_supr _ (⟨y, hy⟩: Y)),
+  exact le_refl (f x y),
+end
+
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
 include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
 
+
+example (f1 f2 : E → ereal) (hf1 : lower_semicontinuous_on f1 X) (hfc1 : quasiconvex_on ℝ X f1) (hf2 : lower_semicontinuous_on f2 X) (hfc2 : quasiconvex_on ℝ X f2) (u : ereal) (hu : u < infi (λ x : X, f1 x ⊔ f2 x)) 
+: false := sorry
+
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
-  ∃ y0 ∈ Y, (t : ereal) < infi (λ x : X, f x y0) := sorry
+  ∃ y0 ∈ Y, (t : ereal) < infi (λ x : X, f x y0) := 
+begin
+  by_contradiction hinfi_le,
+  push_neg at hinfi_le,
+  obtain ⟨t' : ereal, htt' : (t : ereal) < t', ht' : t' < infi (λ x : X, f x y1 ⊔ f x y2)⟩
+    := ereal.exists_between ht,
+--  let Z := segment ℝ y1 y2,
+  let C : ereal → F → set E := λ u z, X ∩ set.preimage (λ x : E, f x z)
+    (set.Iic u), 
+  have hC : ∀ u v z, u ≤ v →  C u z ⊆ C v z, 
+  { intros u v z h,
+    simp only [C], 
+    apply set.inter_subset_inter_right , 
+    refine set.preimage_mono _,
+    rw set.Iic_subset_Iic , exact h, } ,
+  have hC_closed : ∀ u z, is_closed (C u z), sorry,
+  have hC_convex : ∀ u z, convex ℝ (C u z), sorry,
+  have hC_empty_inter : (C t' y1 ∩ C t' y2) = ∅, sorry,
+  have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, sorry,
+  have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
+  { intros z hz,
+    suffices : is_preconnected (C t' z), 
+    rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    -- rw is_preconnected_closed_iff at this,
+    apply this (C t' y1) (C t' y2) (hC_closed t' y1) (hC_closed t' y2) (hC_subset z hz),
+    rw [hC_empty_inter, set.inter_empty], 
+    exact convex.is_preconnected (hC_convex t' z), },
+
+  let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
+  have hJ1 : is_closed (J1), sorry,
+  have hy1_mem_J1 : y1 ∈ J1, 
+  { simp only [J1, set.mem_sep_iff], 
+    split, 
+    exact left_mem_segment ℝ y1 y2,
+    apply hC, exact le_of_lt htt', },
+  let J2 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y2},
+  have hy2_mem_J2 : y2 ∈ J2,
+  { simp only [J1, set.mem_sep_iff], split, exact right_mem_segment ℝ y1 y2, 
+    exact hC _ _ _ (le_of_lt htt'), },
+  have hJ2 : is_closed (J2), sorry, 
+  have hJ1J2 : J1 ∩ J2 = ∅, sorry,
+  have hJ1_union_J2 : segment ℝ y1 y2 ⊆ J1 ∪ J2, sorry,
+  suffices : is_preconnected (segment ℝ y1 y2),
+  { rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    specialize this J1 J2 hJ1 hJ2 hJ1_union_J2,
+    cases this _ with h1 h2, 
+    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
+      apply hJ1J2 y2, 
+      rw set.mem_inter_iff,
+      split, apply h1, apply right_mem_segment, exact hy2_mem_J2, },
+    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
+      apply hJ1J2 y1, 
+      rw set.mem_inter_iff,
+      split, exact hy1_mem_J1, apply h2, apply left_mem_segment, },
+    rw [hJ1J2, set.inter_empty], },
+  
+  exact convex.is_preconnected (convex_segment y1 y2),
+end
+
+example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
+begin
+exact set.eq_empty_iff_forall_not_mem.mp hs a ha
+end
 
 lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < infi (λ x : X, supr (λ y : s, f x y))) : 
   ∃ y0 ∈ Y,  (t : ereal) < infi (λ x : X, f x y0) := sorry
@@ -88,9 +174,25 @@ lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := s
 
 lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
 
+/- The theorem is probably wrong without the additional hypothesis
+that Y is compact. Indeed, if the image of (λ y, f x y) is not bounded above,
+then supr is defined as 0, while the theorem should interpret it as infinity.
+
+Possibilities : 
+
+- add hypotheses that guarantee the bdd_above condition
+- replace the infimum on (x : X) by the infimum on the subtype of X
+consisting of x such that (λ y, f x y) is bounded above.
+(If that subtype is empty, the left hand side is +infinity for mathematicians,
+but 0 for Lean… what about the rhs?)
+
+-/
+
 theorem minimax : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := sorry
 
+/- Here, one will need compactness on Y — otherwise, no hope that
+the saddle point exists… -/
 /-- The minimax theorem, in the saddle point form -/
 theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
   is_saddle_point_on X Y f ha hb := sorry
