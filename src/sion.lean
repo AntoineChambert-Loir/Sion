@@ -1,6 +1,7 @@
 
 import .semicontinuous
 import .concavexity
+import for_mathlib.misc
 
 import analysis.convex.topology
 import data.real.ereal
@@ -44,12 +45,6 @@ by `sorry`ing all the results that we need in the semicontinuous case.
 
 -/
 
-
-/- ereal is missing the `densely_ordered` instance ! -/
-
-lemma ereal.exists_between {a b : ereal} (h : a < b) : ∃ (c : ereal), a < c ∧ c < b := 
-sorry
-
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
 variables 
@@ -74,16 +69,13 @@ begin
   rintro ⟨y, hy⟩,
   rw le_infi_iff,
   rintro ⟨x, hx⟩,
-  refine le_trans (infi_le _ (⟨x,hx⟩ : X)) _, 
-  -- je ne comprends pas pourquoi le_supr ne permet pas de conclure
-  refine le_trans _ (le_supr _ (⟨y, hy⟩: Y)),
-  exact le_refl (f x y),
+  exact le_trans (infi_le _ (⟨x,hx⟩ : X)) (le_supr (f x ∘ coe) (⟨y, hy⟩ : Y)),
 end
 
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
+include hfy hfy' hfx hfx'
 
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
@@ -91,8 +83,7 @@ lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 :
 begin
   by_contradiction hinfi_le,
   push_neg at hinfi_le,
-  obtain ⟨t' : ereal, htt' : (t : ereal) < t', ht' : t' < infi (λ x : X, f x y1 ⊔ f x y2)⟩
-    := ereal.exists_between ht,
+  obtain ⟨t' : ereal, htt' : (t : ereal) < t', ht' : t' < infi (λ x : X, f x y1 ⊔ f x y2)⟩ := exists_between ht,
 --  let Z := segment ℝ y1 y2,
   let C : ereal → F → set E := λ u z, { x ∈ X | f x z ≤ u }, 
   --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
@@ -255,6 +246,8 @@ the saddle point exists… -/
 theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
   is_saddle_point_on X Y f ha hb := sorry
 
+include ne_X ne_Y
+
 -- There are some `sorry` because we need to add the proof that the
 -- function is bounded on X Y 
 /-- The minimax theorem, in the inf-sup equals sup-inf form -/
@@ -305,4 +298,4 @@ end
 
 end sion 
 
-end sion
+end real
