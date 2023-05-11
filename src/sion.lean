@@ -74,10 +74,7 @@ begin
   rintro ⟨y, hy⟩,
   rw le_infi_iff,
   rintro ⟨x, hx⟩,
-  refine le_trans (infi_le _ (⟨x,hx⟩ : X)) _, 
-  -- je ne comprends pas pourquoi le_supr ne permet pas de conclure
-  refine le_trans _ (le_supr _ (⟨y, hy⟩: Y)),
-  exact le_refl (f x y),
+  exact le_trans (infi_le _ (⟨x,hx⟩ : X)) (le_supr (f x ∘ coe) (⟨y, hy⟩ : Y)),
 end
 
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
