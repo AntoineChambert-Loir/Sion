@@ -2,6 +2,7 @@
 import .semicontinuous
 import .concavexity
 
+import analysis.convex.topology
 import data.real.ereal
 
 
@@ -50,9 +51,9 @@ lemma ereal.exists_between {a b : ereal} (h : a < b) : ∃ (c : ereal), a < c �
 
 
 variables 
- {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
+ {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
 variables 
- {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [has_continuous_add F] [has_continuous_smul ℝ F]
+ {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [topological_add_group F] [has_continuous_smul ℝ F]
 variables (X : set E) (ne_X : X.nonempty) (cX : convex ℝ X) (kX : is_compact X)
 variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y)
 
@@ -99,17 +100,60 @@ begin
 --  let Z := segment ℝ y1 y2,
   let C : ereal → F → set E := λ u z, X ∩ set.preimage (λ x : E, f x z)
     (set.Iic u), 
-  suffices : ∀ u, ∀ z ∈ segment ℝ y1 y2, C u z ⊆ C u y1 ∨ C u z ⊆ C u y2,
-  sorry,
-
-
+  have hC : ∀ u v z, u ≤ v →  C u z ⊆ C v z, 
+  { intros u v z h,
+    simp only [C], 
+    apply set.inter_subset_inter_right , 
+    refine set.preimage_mono _,
+    rw set.Iic_subset_Iic , exact h, } ,
   have hC_closed : ∀ u z, is_closed (C u z), sorry,
   have hC_convex : ∀ u z, convex ℝ (C u z), sorry,
   have hC_empty_inter : (C t' y1 ∩ C t' y2) = ∅, sorry,
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, sorry,
+  have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
+  { intros z hz,
+    suffices : is_preconnected (C t' z), 
+    rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    -- rw is_preconnected_closed_iff at this,
+    apply this (C t' y1) (C t' y2) (hC_closed t' y1) (hC_closed t' y2) (hC_subset z hz),
+    rw [hC_empty_inter, set.inter_empty], 
+    exact convex.is_preconnected (hC_convex t' z), },
 
+  let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
+  have hJ1 : is_closed (J1), sorry,
+  have hy1_mem_J1 : y1 ∈ J1, 
+  { simp only [J1, set.mem_sep_iff], 
+    split, 
+    exact left_mem_segment ℝ y1 y2,
+    apply hC, exact le_of_lt htt', },
+  let J2 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y2},
+  have hy2_mem_J2 : y2 ∈ J2,
+  { simp only [J1, set.mem_sep_iff], split, exact right_mem_segment ℝ y1 y2, 
+    exact hC _ _ _ (le_of_lt htt'), },
+  have hJ2 : is_closed (J2), sorry, 
+  have hJ1J2 : J1 ∩ J2 = ∅, sorry,
+  have hJ1_union_J2 : segment ℝ y1 y2 ⊆ J1 ∪ J2, sorry,
+  suffices : is_preconnected (segment ℝ y1 y2),
+  { rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    specialize this J1 J2 hJ1 hJ2 hJ1_union_J2,
+    cases this _ with h1 h2, 
+    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
+      apply hJ1J2 y2, 
+      rw set.mem_inter_iff,
+      split, apply h1, apply right_mem_segment, exact hy2_mem_J2, },
+    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
+      apply hJ1J2 y1, 
+      rw set.mem_inter_iff,
+      split, exact hy1_mem_J1, apply h2, apply left_mem_segment, },
+    rw [hJ1J2, set.inter_empty], },
+  
+  exact convex.is_preconnected (convex_segment y1 y2),
 end
 
+example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
+begin
+exact set.eq_empty_iff_forall_not_mem.mp hs a ha
+end
 
 lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < infi (λ x : X, supr (λ y : s, f x y))) : 
   ∃ y0 ∈ Y,  (t : ereal) < infi (λ x : X, f x y0) := sorry
