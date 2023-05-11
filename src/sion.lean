@@ -47,8 +47,8 @@ by `sorry`ing all the results that we need in the semicontinuous case.
 
 /- ereal is missing the `densely_ordered` instance ! -/
 
-lemma ereal.exists_between {a b : ereal} (h : a < b) : ∃ (c : ereal), a < c ∧ c < b := sorry
-
+lemma ereal.exists_between {a b : ereal} (h : a < b) : ∃ (c : ereal), a < c ∧ c < b := 
+sorry
 
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
@@ -84,10 +84,6 @@ variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx'
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
 include hfx hfx' ne_X cX kX hfy hfy' ne_Y cY
-
-
-example (f1 f2 : E → ereal) (hf1 : lower_semicontinuous_on f1 X) (hfc1 : quasiconvex_on ℝ X f1) (hf2 : lower_semicontinuous_on f2 X) (hfc2 : quasiconvex_on ℝ X f2) (u : ereal) (hu : u < infi (λ x : X, f1 x ⊔ f2 x)) 
-: false := sorry
 
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
@@ -126,7 +122,20 @@ begin
     rw sup_le_iff,
     simp only [subtype.coe_mk], 
     exact ⟨hx1, hx2⟩, },
-  have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, sorry,
+  have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, 
+  { intros z hz, 
+    rintros x ⟨hx, hx'⟩,
+    simp only [set.mem_union, set.mem_sep_iff, hx, true_and],
+    specialize hfx' x hx,
+    simp only [quasiconcave_on] at hfx',
+    specialize hfx' (f x y1 ⊓ f x y2),
+    rw convex_iff_segment_subset at hfx', 
+    specialize @hfx' y1 _ y2 _ z hz,
+    { rw set.mem_sep_iff, split, exact hy1, exact inf_le_left, },
+    { rw set.mem_sep_iff, split, exact hy2, exact inf_le_right, },
+    rw set.mem_sep_iff at hfx', 
+    rw ← inf_le_iff,
+    exact le_trans hfx'.2 hx', },
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
   { intros z hz, -- il faut un coup de coercion…
     suffices : is_preconnected (C t' z), 
