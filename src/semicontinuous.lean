@@ -49,6 +49,21 @@ variable {f : α → β}
 
 section lower_semicontinuous
 
+lemma lower_semicontinuous_on_iff_restrict {s : set α} : 
+  lower_semicontinuous_on f s ↔
+  lower_semicontinuous (s.restrict f) := sorry
+
+lemma lower_semicontinuous_on_iff_preimage_Ioi {s : set α} :
+  lower_semicontinuous_on f s ↔ 
+  ∀ x ∈ s, ∀ b, b < f x →  
+  ∃ (u : set α), is_open u ∧ f ⁻¹' (set.Ioi b) ∩ s = u ∩ s :=
+sorry
+
+lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
+  lower_semicontinuous_on f s ↔ 
+  ∀ b, ∃ (v : set α), is_closed v ∧ f ⁻¹' (set.Iic b) ∩ s = v ∩ s :=
+sorry
+
 /-- A lower semicontinuous function attains its lowers bound on a nonempty compact set -/
 theorem lower_semicontinuous.is_compact.exists_forall_le {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)

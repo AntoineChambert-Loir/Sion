@@ -4,7 +4,7 @@ import .concavexity
 
 import analysis.convex.topology
 import data.real.ereal
-
+import topology.instances.ereal 
 
 /-! # Formalization of the von Neumann Sion theorem 
 
@@ -98,24 +98,41 @@ begin
   obtain ⟨t' : ereal, htt' : (t : ereal) < t', ht' : t' < infi (λ x : X, f x y1 ⊔ f x y2)⟩
     := ereal.exists_between ht,
 --  let Z := segment ℝ y1 y2,
-  let C : ereal → F → set E := λ u z, X ∩ set.preimage (λ x : E, f x z)
-    (set.Iic u), 
+  let C : ereal → F → set E := λ u z, { x ∈ X | f x z ≤ u }, 
+  --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
   have hC : ∀ u v z, u ≤ v →  C u z ⊆ C v z, 
   { intros u v z h,
     simp only [C], 
-    apply set.inter_subset_inter_right , 
-    refine set.preimage_mono _,
-    rw set.Iic_subset_Iic , exact h, } ,
-  have hC_closed : ∀ u z, is_closed (C u z), sorry,
-  have hC_convex : ∀ u z, convex ℝ (C u z), sorry,
-  have hC_empty_inter : (C t' y1 ∩ C t' y2) = ∅, sorry,
+    intro x, simp only [set.mem_sep_iff],
+    rintro ⟨hx, hxu⟩, exact ⟨hx, le_trans hxu h⟩, } ,
+  have hC_closed : ∀ u, ∀ {z}, z ∈ Y → is_closed (set.preimage coe (C u z) : set X), 
+  { intros u z hz, simp only [C],
+    specialize hfy z hz, 
+    rw lower_semicontinuous_on_iff_restrict at hfy, 
+    rw lower_semicontinuous_iff_is_closed_preimage at hfy, 
+    convert hfy u,
+    ext ⟨x, hx⟩,
+    simp only [set.mem_preimage, hx, subtype.coe_mk, set.mem_sep_iff, true_and, set.restrict_apply, set.mem_Iic], },
+  have hC_convex : ∀ u, ∀ {z}, z ∈ Y → convex ℝ (C u z), 
+  { intros u z hz, 
+    simp only [C],
+    simp only [quasiconvex_on] at hfy',
+    exact hfy' z hz u, },
+  have hC_empty_inter : (C t' y1 ∩ C t' y2) = ∅, 
+  { ext x, simp only [set.mem_inter_iff, set.mem_sep_iff, set.mem_empty_iff_false, iff_false, not_and, and_imp], 
+    intros hx hx1 _ hx2,
+    rw ← not_le at ht', apply ht', 
+    refine le_trans (infi_le _ ⟨x, hx⟩) _,
+    rw sup_le_iff,
+    simp only [subtype.coe_mk], 
+    exact ⟨hx1, hx2⟩, },
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, sorry,
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
-  { intros z hz,
+  { intros z hz, -- il faut un coup de coercion…
     suffices : is_preconnected (C t' z), 
     rw is_preconnected_iff_subset_of_disjoint_closed at this,
     -- rw is_preconnected_closed_iff at this,
-    apply this (C t' y1) (C t' y2) (hC_closed t' y1) (hC_closed t' y2) (hC_subset z hz),
+    apply this (C t' y1) (C t' y2) (hC_closed t' hy1) (hC_closed t' hy2) (hC_subset z hz),
     rw [hC_empty_inter, set.inter_empty], 
     exact convex.is_preconnected (hC_convex t' z), },
 
