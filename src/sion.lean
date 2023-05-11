@@ -96,6 +96,10 @@ begin
 --  let Z := segment ℝ y1 y2,
   let C : ereal → F → set E := λ u z, { x ∈ X | f x z ≤ u }, 
   --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
+  /- On se bagarre entre la topologie ambiante
+  et les topologies induites sur X (compact convexe) ou sur segment ℝ y1 y2 
+  L'une ou l'autre des définitions est confortable.
+  -/
   have hC : ∀ u v z, u ≤ v →  C u z ⊆ C v z, 
   { intros u v z h,
     simp only [C], 
@@ -137,16 +141,31 @@ begin
     rw ← inf_le_iff,
     exact le_trans hfx'.2 hx', },
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
-  { intros z hz, -- il faut un coup de coercion…
-    suffices : is_preconnected (C t' z), 
-    rw is_preconnected_iff_subset_of_disjoint_closed at this,
-    -- rw is_preconnected_closed_iff at this,
-    apply this (C t' y1) (C t' y2) (hC_closed t' hy1) (hC_closed t' hy2) (hC_subset z hz),
-    rw [hC_empty_inter, set.inter_empty], 
-    exact convex.is_preconnected (hC_convex t' z), },
+  { intros z hz, 
+    -- il faut un coup de coercion…
+    suffices : C t' z ⊆ set.range (coe : X → E),
+    simp only [← (set.preimage_subset_preimage_iff this)],
+    suffices that : is_preconnected (coe ⁻¹' (C t' z) : set X), 
+    rw is_preconnected_iff_subset_of_disjoint_closed at that,
+  
+    apply that _ _ (hC_closed t' hy1) (hC_closed t' hy2), 
+    
+    simp only [← set.preimage_union, set.preimage_subset_preimage_iff this],
+    exact (hC_subset z hz),
+    
+    simp only [← set.preimage_inter, set.preimage_subset_preimage_iff this],
+    rw [hC_empty_inter, set.inter_empty, set.preimage_empty],
+
+    rw ← (inducing_coe:
+      inducing (coe : X → E)).is_preconnected_image ,
+    rw set.image_preimage_eq_of_subset this, 
+    refine convex.is_preconnected (hC_convex t' _), 
+    rw convex_iff_segment_subset at cY,
+    refine cY hy1 hy2 hz,
+    simp only [subtype.range_coe_subtype, set.set_of_mem_eq, set.sep_subset], },
 
   let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
-  have hJ1 : is_closed (J1), sorry,
+  have hJ1 : is_closed (coe ⁻¹' J1 : set (segment ℝ y1 y2)), sorry,
   have hy1_mem_J1 : y1 ∈ J1, 
   { simp only [J1, set.mem_sep_iff], 
     split, 
@@ -156,12 +175,19 @@ begin
   have hy2_mem_J2 : y2 ∈ J2,
   { simp only [J1, set.mem_sep_iff], split, exact right_mem_segment ℝ y1 y2, 
     exact hC _ _ _ (le_of_lt htt'), },
-  have hJ2 : is_closed (J2), sorry, 
+  have hJ2 : is_closed (coe ⁻¹' J2 : set (segment ℝ y1 y2)), sorry, 
   have hJ1J2 : J1 ∩ J2 = ∅, sorry,
   have hJ1_union_J2 : segment ℝ y1 y2 ⊆ J1 ∪ J2, sorry,
-  suffices : is_preconnected (segment ℝ y1 y2),
-  { rw is_preconnected_iff_subset_of_disjoint_closed at this,
-    specialize this J1 J2 hJ1 hJ2 hJ1_union_J2,
+  suffices that : segment ℝ y1 y2 ⊆ set.range (coe : (segment ℝ y1 y2) → F),  
+  suffices this : is_preconnected (coe ⁻¹' (segment ℝ y1 y2) : set (segment ℝ y1 y2)),
+  {  -- rw ← set.image_preimage_eq_of_subset that, 
+    rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    specialize this _ _ hJ1 hJ2 _, 
+    simp only [← set.preimage_union], 
+    simp only [set.preimage_subset_preimage_iff that],
+    exact hJ1_union_J2,
+
+    simp only [set.preimage_inter, set.preimage_subset_preimage_iff that] at this,
     cases this _ with h1 h2, 
     { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
       apply hJ1J2 y2, 
@@ -171,9 +197,15 @@ begin
       apply hJ1J2 y1, 
       rw set.mem_inter_iff,
       split, exact hy1_mem_J1, apply h2, apply left_mem_segment, },
-    rw [hJ1J2, set.inter_empty], },
+
+    simp only [subtype.coe_preimage_self, set.univ_inter],
+    rw [← set.preimage_inter, hJ1J2, set.preimage_empty], },
   
+  rw ←(inducing_coe).is_preconnected_image, 
+  rw set.image_preimage_eq_of_subset that, 
   exact convex.is_preconnected (convex_segment y1 y2),
+
+  simp only [subtype.range_coe_subtype, set.set_of_mem_eq, set.sep_subset], 
 end
 
 example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
