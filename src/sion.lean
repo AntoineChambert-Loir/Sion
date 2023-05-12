@@ -47,6 +47,8 @@ by `sorry`ing all the results that we need in the semicontinuous case.
 
 -/
 
+open set
+
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
 variables 
@@ -79,97 +81,63 @@ variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy'
 
 include hfy cY hfy' hfx cX hfx'
 
+-- Question pour Antoine : Y-a-t'il une raison pour utiliser `⨅ (x : X), foo x` au lieu de `⨅ x ∈ X, foo x`
+-- (le deuxième évite des coercions) ? Dans `ℝ` ce sera important de faire la distinction parce 
+-- que ça ne donne pas le même résultat (`⨅ x ∈ X, foo x` devient `⨅ (x : E), ⨅ (hx : x ∈ X), foo x` et
+-- l'inf sur l'ensemble vide ne donne rien sur `ℝ`), mais autant profiter à fond de `ereal`, non ?
+
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
-  {t : ℝ} (ht : (t : ereal) < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
+  {t : ℝ} (ht : (t : ereal) < ⨅ (x : X), (f x y1) ⊔ (f x y2)) :
   ∃ y0 ∈ Y, (t : ereal) < infi (λ x : X, f x y0) := 
 begin
-  by_contradiction hinfi_le,
-  push_neg at hinfi_le,
-  obtain ⟨t' : ereal, htt' : (t : ereal) < t', ht' : t' < infi (λ x : X, f x y1 ⊔ f x y2)⟩ := exists_between ht,
+  by_contra' hinfi_le,
+  obtain ⟨t' : ereal, htt' : ↑t < t', ht' : t' < ⨅ (x : X), f x y1 ⊔ f x y2⟩ := exists_between ht,
 --  let Z := segment ℝ y1 y2,
-  let C : ereal → F → set E := λ u z, { x ∈ X | f x z ≤ u }, 
+  let C : ereal → F → set X := λ u z, ((λ x, f x z) ∘ coe) ⁻¹' (Iic u), 
   --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
   /- On se bagarre entre la topologie ambiante
   et les topologies induites sur X (compact convexe) ou sur segment ℝ y1 y2 
   L'une ou l'autre des définitions est confortable.
   -/
-  have hC : ∀ u v z, u ≤ v →  C u z ⊆ C v z, 
+  have hC : ∀ u v z, u ≤ v → C u z ⊆ C v z, 
   { intros u v z h,
-    simp only [C], 
-    intro x, simp only [set.mem_sep_iff],
-    rintro ⟨hx, hxu⟩, exact ⟨hx, le_trans hxu h⟩, } ,
+    -- C'est cosmétique, pas besoin de déplier les définitions
+    -- simp only [C], 
+    -- intro x, simp only [set.mem_sep_iff],
+    rintro x hxu, exact (le_trans hxu h) } ,
 
     -- Uses compactness of X !
   have hC_ne : ∀ z ∈ Y, (C t z).nonempty,
   sorry,
 
-  have hC_closed : ∀ u, ∀ {z}, z ∈ Y → is_closed (set.preimage coe (C u z) : set X), 
+  have hC_closed : ∀ u, ∀ {z}, z ∈ Y → is_closed (C u z), 
   { intros u z hz, simp only [C],
     specialize hfy z hz, 
     rw lower_semicontinuous_on_iff_restrict at hfy, 
     rw lower_semicontinuous_iff_is_closed_preimage at hfy, 
-    convert hfy u,
-    ext ⟨x, hx⟩,
-    simp only [set.mem_preimage, hx, subtype.coe_mk, set.mem_sep_iff, true_and, set.restrict_apply, set.mem_Iic], },
-  have hC_convex : ∀ u, ∀ {z}, z ∈ Y → convex ℝ (C u z), 
+    exact hfy u },
+  have hC_preconnected : ∀ u, ∀ {z}, z ∈ Y → is_preconnected (C u z), 
   { intros u z hz, 
-    simp only [C],
-    simp only [quasiconvex_on] at hfy',
-    exact hfy' z hz u, },
-  have hC_empty_inter : (C t' y1 ∩ C t' y2) = ∅, 
-  { ext x, simp only [set.mem_inter_iff, set.mem_sep_iff, set.mem_empty_iff_false, iff_false, not_and, and_imp], 
-    intros hx hx1 _ hx2,
-    rw ← not_le at ht', apply ht', 
-    refine le_trans (infi_le _ ⟨x, hx⟩) _,
-    rw sup_le_iff,
-    simp only [subtype.coe_mk], 
-    exact ⟨hx1, hx2⟩, },
+    exact (hfy' z hz).is_preconnected_preimage },
+  have hC_disj : disjoint (C t' y1) (C t' y2), 
+    from set.disjoint_iff.mpr (λ x hx, not_lt_of_le 
+      (infi_le_of_le x $ sup_le_iff.mpr hx) ht'),
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, 
-  { intros z hz, 
-    rintros x ⟨hx, hx'⟩,
-    simp only [set.mem_union, set.mem_sep_iff, hx, true_and],
-    specialize hfx' x hx,
-    simp only [quasiconcave_on] at hfx',
-    specialize hfx' (f x y1 ⊓ f x y2),
-    rw convex_iff_segment_subset at hfx', 
-    specialize @hfx' y1 _ y2 _ z hz,
-    { rw set.mem_sep_iff, split, exact hy1, exact inf_le_left, },
-    { rw set.mem_sep_iff, split, exact hy2, exact inf_le_right, },
-    rw set.mem_sep_iff at hfx', 
+  { intros z hz x hx,
+    change (_ ≤ _) ∨ (_ ≤ _), 
     rw ← inf_le_iff,
-    exact le_trans hfx'.2 hx', },
+    specialize hfx' x x.2 (f x y1 ⊓ f x y2),
+    rw convex_iff_segment_subset at hfx', 
+    specialize hfx' ⟨hy1, inf_le_left⟩ ⟨hy2, inf_le_right⟩ hz,
+    exact le_trans hfx'.2 hx },
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
   { intros z hz, 
-    -- il faut un coup de coercion…
-    suffices : C t' z ⊆ set.range (coe : X → E),
-    simp only [← (set.preimage_subset_preimage_iff this)],
-    suffices that : is_preconnected (coe ⁻¹' (C t' z) : set X), 
-    rw is_preconnected_iff_subset_of_disjoint_closed at that,
-  
-    apply that _ _ (hC_closed t' hy1) (hC_closed t' hy2), 
-    
-    simp only [← set.preimage_union, set.preimage_subset_preimage_iff this],
-    exact (hC_subset z hz),
-    
-    simp only [← set.preimage_inter, set.preimage_subset_preimage_iff this],
-    rw [hC_empty_inter, set.inter_empty, set.preimage_empty],
-
-    rw ← (inducing_coe:
-      inducing (coe : X → E)).is_preconnected_image ,
-    rw set.image_preimage_eq_of_subset this, 
-    refine convex.is_preconnected (hC_convex t' _), 
-    rw convex_iff_segment_subset at cY,
-    refine cY hy1 hy2 hz,
-    simp only [subtype.range_coe_subtype, set.set_of_mem_eq, set.sep_subset], },
-
-  let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
-  have hJ1 : is_closed (coe ⁻¹' J1 : set (segment ℝ y1 y2)), 
+    exact (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)).subset_or_subset_of_closed 
+      (hC_closed _ hy1) (hC_closed _ hy2) hC_disj (hC_subset _ hz) },
+  let J1 := {z : segment ℝ y1 y2 | C t z ⊆ C t' y1},
+  have hJ1 : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
-    rintros ⟨y, hy⟩ h,
-    rw [set.mem_preimage, subtype.coe_mk, set.mem_sep_iff],
-    apply and.intro hy,
-    intros x hx, 
-
+    intros y h x hx, 
 
 /- y = lim yn, yn ∈ J1 
    comme x ∈ C t y, on a f x y ≤ t < t', 
@@ -185,17 +153,18 @@ begin
    En particulier, x ∈ C yt' y1 
 
 -/
-    suffices : ∃ z ∈ J1, x ∈ C t' z, 
+
+-- Anatole: Je me suis arrếté là
+    suffices : ∃ z ∈ J1, x ∈ C t' (z : F), 
     obtain ⟨z, hz, hxz⟩ := this, 
     suffices : C t' z ⊆ C t' y1, exact this hxz, 
 
-    rw set.mem_sep_iff at hz, 
-    apply or.resolve_right (hC_subset_or z hz.1),
+    apply or.resolve_right (hC_subset_or z z.2),
     intro hz2, 
 
-    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 hz.1)),
-    rw ← hC_empty_inter, 
-    apply set.subset_inter hz.2, 
+    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 z.2)),
+    rw ← (disjoint_iff_inter_eq_empty.mp hC_disj), 
+    apply set.subset_inter hz, 
     exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
 
     -- This is a rewriting of h in a nicer form, there must be a better way to do

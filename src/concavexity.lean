@@ -1,7 +1,9 @@
-import analysis.convex.basic
+import analysis.convex.topology
 import analysis.convex.quasiconvex
 import topology.semicontinuous
+import data.real.ereal
 
+open set
 
 section quasiconcave
 
@@ -12,8 +14,8 @@ Maybe the result is false, I don't know.
 
 -/
 variables 
- {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
-variable {f : E → ℝ}
+ {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E] [has_continuous_smul ℝ E]
+variable {f : E → ereal}
 
 /-- A quasiconcave and lower semicontinuous function attains its upper bound on a nonempty compact set -/
 lemma is_compact.exists_forall_ge_of_quasiconcave {s : set E}
@@ -38,6 +40,14 @@ begin
     use f a, rintros t ⟨x, hx, rfl⟩, exact hax x hx, },
 end
 
+lemma quasiconcave_on.is_preconnected_preimage {s : set E} {t : ereal} (hfc : quasiconcave_on ℝ s f) : 
+  is_preconnected ((f ∘ coe) ⁻¹' (Ici t) : set s) :=
+begin
+  rw [preimage_comp, ← inducing_coe.is_preconnected_image, image_preimage_eq_inter_range,
+      subtype.range_coe, inter_comm],
+  exact (hfc t).is_preconnected
+end
+
 end quasiconcave
 
 
@@ -52,8 +62,8 @@ Maybe the result is false, I don't know.
 -/
 
 variables 
- {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [has_continuous_add E] [has_continuous_smul ℝ E]
-variable {f : E → ℝ}
+ {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E] [has_continuous_smul ℝ E]
+variable {f : E → ereal}
 
 /-- A quasiconvex and upper semicontinuous function attains its lower bound on a nonempty compact set -/
 lemma is_compact.exists_forall_le_of_quasiconvex {s : set E}
@@ -70,6 +80,14 @@ begin
   { rw e_s, simp only [set.image_empty, bdd_below_empty], },
   { obtain ⟨a, ha, hax⟩ := is_compact.exists_forall_le_of_quasiconvex ne_s hs hfs hfc,
     use f a, rintros t ⟨x, hx, rfl⟩, exact hax x hx, },
+end
+
+lemma quasiconvex_on.is_preconnected_preimage {s : set E} {t : ereal} (hfc : quasiconvex_on ℝ s f) : 
+  is_preconnected ((f ∘ coe) ⁻¹' (Iic t) : set s) :=
+begin
+  rw [preimage_comp, ← inducing_coe.is_preconnected_image, image_preimage_eq_inter_range,
+      subtype.range_coe, inter_comm],
+  exact (hfc t).is_preconnected
 end
 
 end quasiconvex
