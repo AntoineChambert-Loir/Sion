@@ -75,7 +75,7 @@ end
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-include hfy hfy' hfx hfx'
+include hfy cY hfy' hfx cX hfx'
 
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < infi (λ x : X,  (f x y1) ⊔ (f x y2))) :
@@ -156,7 +156,22 @@ begin
     simp only [subtype.range_coe_subtype, set.set_of_mem_eq, set.sep_subset], },
 
   let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
-  have hJ1 : is_closed (coe ⁻¹' J1 : set (segment ℝ y1 y2)), sorry,
+  have hJ1 : is_closed (coe ⁻¹' J1 : set (segment ℝ y1 y2)), 
+  { sorry, },
+  have hJ1' : is_closed (coe ⁻¹' J1 : set Y),
+  { /- C t z ⊆ C t' y1 
+    ↔ f x z ≤ t → f x y1 ≤ t'
+    ↔ f x y1 ≤ t' ∨ f x z > t 
+    ↔ f x y1 > t' → f x z > t   -/
+    rw ← is_open_compl_iff,
+    rw is_open_iff_nhds,
+    rintros ⟨y, hy⟩ hyJ1,
+    simp only [filter.le_principal_iff],
+    simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hfy,
+    simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
+
+
+  sorry },
   have hy1_mem_J1 : y1 ∈ J1, 
   { simp only [J1, set.mem_sep_iff], 
     split, 
