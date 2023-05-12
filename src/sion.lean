@@ -27,11 +27,13 @@ We follow the proof of Komiya (1988).
 
 ## References
 
-- Neumann, John von (1928). « Zur Theorie der Gesellschaftsspiele ». Mathematische Annalen 100 (1): 295‑320. https://doi.org/10.1007/BF01448847.
+- Neumann, John von (1928). « Zur Theorie der Gesellschaftsspiele ». Mathematische Annalen 100 (1): 295‑320. 
+https://doi.org/10.1007/BF01448847.
 
 - Sion, Maurice (1958). « On general minimax theorems ». Pacific Journal of Mathematics 8 (1): 171‑76.
 
-- Komiya, Hidetoshi (1988). « Elementary Proof for Sion’s Minimax Theorem ». Kodai Mathematical Journal 11 (1). https://doi.org/10.2996/kmj/1138038812.
+- Komiya, Hidetoshi (1988). « Elementary Proof for Sion’s Minimax Theorem ». Kodai Mathematical Journal 11 (1). 
+https://doi.org/10.2996/kmj/1138038812.
 
 
 ## Comments on the proof
@@ -96,6 +98,11 @@ begin
     simp only [C], 
     intro x, simp only [set.mem_sep_iff],
     rintro ⟨hx, hxu⟩, exact ⟨hx, le_trans hxu h⟩, } ,
+
+    -- Uses compactness of X !
+  have hC_ne : ∀ z ∈ Y, (C t z).nonempty,
+  sorry,
+
   have hC_closed : ∀ u, ∀ {z}, z ∈ Y → is_closed (set.preimage coe (C u z) : set X), 
   { intros u z hz, simp only [C],
     specialize hfy z hz, 
@@ -157,18 +164,61 @@ begin
 
   let J1 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y1},
   have hJ1 : is_closed (coe ⁻¹' J1 : set (segment ℝ y1 y2)), 
-  { sorry, },
-  have hJ1' : is_closed (coe ⁻¹' J1 : set Y),
-  { /- C t z ⊆ C t' y1 
-    ↔ f x z ≤ t → f x y1 ≤ t'
-    ↔ f x y1 ≤ t' ∨ f x z > t 
-    ↔ f x y1 > t' → f x z > t   -/
-    rw ← is_open_compl_iff,
-    rw is_open_iff_nhds,
-    rintros ⟨y, hy⟩ hyJ1,
-    simp only [filter.le_principal_iff],
+  { rw is_closed_iff_cluster_pt, 
+    rintros ⟨y, hy⟩ h,
+    rw [set.mem_preimage, subtype.coe_mk, set.mem_sep_iff],
+    apply and.intro hy,
+    intros x hx, 
+
+
+/- y = lim yn, yn ∈ J1 
+   comme x ∈ C t y, on a f x y ≤ t < t', 
+   comme (f x ⬝) est usc, f x yn < t' pour n assez grand
+   donc x ∈ C t' yn pour n assez grand
+   
+   pour z ∈ J1 tel que x ∈ C t' z
+   On prouve C t' z ⊆ C t' y1
+   Par hypothèse, C t z ⊆ C t' y1
+   Sinon, C t' z ⊆ C t' y2 (hC_subset_or)
+   Donc x ∈ C t' y1 ∩ C t' y2 = ∅, contradiction
+
+   En particulier, x ∈ C yt' y1 
+
+-/
+    suffices : ∃ z ∈ J1, x ∈ C t' z, 
+    obtain ⟨z, hz, hxz⟩ := this, 
+    suffices : C t' z ⊆ C t' y1, exact this hxz, 
+
+    rw set.mem_sep_iff at hz, 
+    apply or.resolve_right (hC_subset_or z hz.1),
+    intro hz2, 
+
+    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 hz.1)),
+    rw ← hC_empty_inter, 
+    apply set.subset_inter hz.2, 
+    exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
+
+    -- This is a rewriting of h in a nicer form, there must be a better way to do
+    have h' : ∃ᶠ (z : F) in nhds y, z ∈ J1,
+    { simp only [cluster_pt_principal_iff_frequently, (inducing_coe).nhds_eq_comap, subtype.coe_mk,
+    set.mem_preimage, filter.frequently_comap, subtype.coe_prop, exists_prop] at h, 
+      simp only [set.mem_preimage, set.mem_sep_iff, subtype.coe_prop, true_and, filter.frequently_comap, set_coe.exists,
+  subtype.coe_mk, exists_prop] at h,
+      
+      suffices : ∀ z, z ∈ J1 ↔ ∃ (z' : F), z' ∈ segment ℝ y1 y2 ∧ z' = z ∧ C t z' ⊆ C t' y1,
+      simp_rw this, 
+      exact h,
+      intro z,
+      rw set.mem_sep_iff, 
+      split, 
+      { rintro ⟨hz, h⟩, use z, exact ⟨hz, rfl, h⟩, },
+      { rintro ⟨z', hz', hz, h'⟩, rw ←hz,exact ⟨hz', h'⟩, }, },
+
+    -- Now, the goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
     simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hfy,
-    simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
+
+    -- and to conclude using that if ∀ᶠ sth holds, then ∃ᶠ sth holds.
+      
 
 
   sorry },
