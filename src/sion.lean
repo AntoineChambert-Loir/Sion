@@ -86,14 +86,21 @@ include hfy cY hfy' hfx cX hfx'
 -- que ça ne donne pas le même résultat (`⨅ x ∈ X, foo x` devient `⨅ (x : E), ⨅ (hx : x ∈ X), foo x` et
 -- l'inf sur l'ensemble vide ne donne rien sur `ℝ`), mais autant profiter à fond de `ereal`, non ?
 
+set_option trace.simp_lemmas true
+
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < ⨅ (x : X), (f x y1) ⊔ (f x y2)) :
   ∃ y0 ∈ Y, (t : ereal) < infi (λ x : X, f x y0) := 
 begin
   by_contra' hinfi_le,
-  obtain ⟨t' : ereal, htt' : ↑t < t', ht' : t' < ⨅ (x : X), f x y1 ⊔ f x y2⟩ := exists_between ht,
+  obtain ⟨t' : ereal, htt' : ↑t < t', ht' : t' < ⨅ (x : X), f x y1 ⊔ f x y2⟩ := 
+    exists_between ht,
 --  let Z := segment ℝ y1 y2,
+--  have hsegment_le : segment ℝ y1 y2 ⊆ Y := cY.segment_subset hy1 hy2, 
+
   let C : ereal → F → set X := λ u z, ((λ x, f x z) ∘ coe) ⁻¹' (Iic u), 
+  have mem_C_iff : ∀ u z (x : X), x ∈ C u z ↔ f x z ≤ u,
+  { intros u z x, refl, },
   --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
   /- On se bagarre entre la topologie ambiante
   et les topologies induites sur X (compact convexe) ou sur segment ℝ y1 y2 
@@ -123,18 +130,26 @@ begin
     from set.disjoint_iff.mpr (λ x hx, not_lt_of_le 
       (infi_le_of_le x $ sup_le_iff.mpr hx) ht'),
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, 
-  { intros z hz x hx,
-    change (_ ≤ _) ∨ (_ ≤ _), 
-    rw ← inf_le_iff,
+  { intros z hz x hx, 
+    simp only [set.mem_union, mem_C_iff, ← inf_le_iff], 
+-- was AD:    change (_ ≤ _) ∨ (_ ≤ _), rw ← inf_le_iff,
     specialize hfx' x x.2 (f x y1 ⊓ f x y2),
     rw convex_iff_segment_subset at hfx', 
     specialize hfx' ⟨hy1, inf_le_left⟩ ⟨hy2, inf_le_right⟩ hz,
     exact le_trans hfx'.2 hx },
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
   { intros z hz, 
-    exact (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)).subset_or_subset_of_closed 
-      (hC_closed _ hy1) (hC_closed _ hy2) hC_disj (hC_subset _ hz) },
+  /-    exact (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)).subset_or_subset_of_closed 
+      (hC_closed _ hy1) (hC_closed _ hy2) hC_disj (hC_subset _ hz), -/
+      apply is_preconnected_iff_subset_of_disjoint_closed.mp (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)) _ _
+      (hC_closed _ hy1) (hC_closed _ hy2) (hC_subset _ hz),
+      rw [set.disjoint_iff_inter_eq_empty.mp hC_disj, set.inter_empty], },
+
   let J1 := {z : segment ℝ y1 y2 | C t z ⊆ C t' y1},
+  -- do we really need this ? (I can't do without it)
+  have mem_J1_iff : ∀ (z : segment ℝ y1 y2), z ∈ J1 ↔ C t z ⊆ C t' y1,
+  { intro z, refl, },
+  
   have hJ1 : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
     intros y h x hx, 
@@ -154,7 +169,6 @@ begin
 
 -/
 
--- Anatole: Je me suis arrếté là
     suffices : ∃ z ∈ J1, x ∈ C t' (z : F), 
     obtain ⟨z, hz, hxz⟩ := this, 
     suffices : C t' z ⊆ C t' y1, exact this hxz, 
@@ -168,70 +182,71 @@ begin
     exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
 
     -- This is a rewriting of h in a nicer form, there must be a better way to do
-    have h' : ∃ᶠ (z : F) in nhds y, z ∈ J1,
-    { simp only [cluster_pt_principal_iff_frequently, (inducing_coe).nhds_eq_comap, subtype.coe_mk,
-    set.mem_preimage, filter.frequently_comap, subtype.coe_prop, exists_prop] at h, 
-      simp only [set.mem_preimage, set.mem_sep_iff, subtype.coe_prop, true_and, filter.frequently_comap, set_coe.exists,
-  subtype.coe_mk, exists_prop] at h,
-      
-      suffices : ∀ z, z ∈ J1 ↔ ∃ (z' : F), z' ∈ segment ℝ y1 y2 ∧ z' = z ∧ C t z' ⊆ C t' y1,
-      simp_rw this, 
-      exact h,
+    have h' : ∃ᶠ (z : F) in nhds ↑y, ∃ (hz : z ∈ segment ℝ y1 y2), 
+      (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1,
+    { simp only [cluster_pt_principal_iff_frequently, 
+        (inducing_coe).nhds_eq_comap, subtype.coe_mk,
+        set.mem_preimage, filter.frequently_comap, subtype.coe_prop, 
+        exists_prop] at h, 
+      suffices : _, 
+      exact (filter.frequently_congr this).mp h, 
+      apply filter.eventually_of_forall,
       intro z,
-      rw set.mem_sep_iff, 
-      split, 
-      { rintro ⟨hz, h⟩, use z, exact ⟨hz, rfl, h⟩, },
-      { rintro ⟨z', hz', hz, h'⟩, rw ←hz,exact ⟨hz', h'⟩, }, },
+      split,
+      { rintro ⟨⟨z', hz'⟩, h⟩, 
+        suffices hz : z ∈ segment ℝ y1 y2, use hz, 
+        convert h.2, rw [← h.1, subtype.coe_mk],
+        rw ← h.1, exact hz', },
+      { rintro ⟨hz, h⟩,
+        use ⟨z, hz⟩, exact ⟨rfl, h⟩, }, },
 
     -- Now, the goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
-    simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hfy,
+    simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
+    specialize hfx x.val x.prop y (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'),
+
+
 
     -- and to conclude using that if ∀ᶠ sth holds, then ∃ᶠ sth holds.
-      
-
-
+    -- using  frequently.mp 
+    
+    -- needs to have h' in terms of nhds y
+    
   sorry },
-  have hy1_mem_J1 : y1 ∈ J1, 
-  { simp only [J1, set.mem_sep_iff], 
-    split, 
-    exact left_mem_segment ℝ y1 y2,
-    apply hC, exact le_of_lt htt', },
-  let J2 := { z in segment ℝ y1 y2 | C t z ⊆  C t' y2},
-  have hy2_mem_J2 : y2 ∈ J2,
-  { simp only [J1, set.mem_sep_iff], split, exact right_mem_segment ℝ y1 y2, 
-    exact hC _ _ _ (le_of_lt htt'), },
-  have hJ2 : is_closed (coe ⁻¹' J2 : set (segment ℝ y1 y2)), sorry, 
+
+  have hy1_mem_J1 : (⟨y1, left_mem_segment ℝ y1 y2⟩ : segment ℝ y1 y2) ∈ J1, 
+  { rw mem_J1_iff, apply hC, exact le_of_lt htt', },
+
+  let J2 := { z : segment ℝ y1 y2 | C t z ⊆  C t' y2},
+  -- bizarrely, this is necessary to add this lemma, 
+  -- rien du genre  rw set.mem_sep_iff ne marche…
+  have mem_J2_iff : ∀ (z : segment ℝ y1 y2), z ∈ J2 ↔ C t z ⊆ C t' y2,
+  { intro z, refl, },
+  have hy2_mem_J2 : (⟨y2, right_mem_segment ℝ y1 y2⟩ : segment ℝ y1 y2) ∈ J2,
+  { rw mem_J2_iff, apply hC, exact le_of_lt htt', },
+  
+  have hJ2 : is_closed J2, sorry, 
+
   have hJ1J2 : J1 ∩ J2 = ∅, sorry,
-  have hJ1_union_J2 : segment ℝ y1 y2 ⊆ J1 ∪ J2, sorry,
-  suffices that : segment ℝ y1 y2 ⊆ set.range (coe : (segment ℝ y1 y2) → F),  
-  suffices this : is_preconnected (coe ⁻¹' (segment ℝ y1 y2) : set (segment ℝ y1 y2)),
-  {  -- rw ← set.image_preimage_eq_of_subset that, 
-    rw is_preconnected_iff_subset_of_disjoint_closed at this,
-    specialize this _ _ hJ1 hJ2 _, 
-    simp only [← set.preimage_union], 
-    simp only [set.preimage_subset_preimage_iff that],
-    exact hJ1_union_J2,
+  have hJ1_union_J2 : J1 ∪ J2 = set.univ, sorry,
 
-    simp only [set.preimage_inter, set.preimage_subset_preimage_iff that] at this,
-    cases this _ with h1 h2, 
-    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
-      apply hJ1J2 y2, 
+  suffices this : is_preconnected (set.univ : set (segment ℝ y1 y2)),
+  { rw is_preconnected_iff_subset_of_disjoint_closed at this,
+    specialize this _ _ hJ1 hJ2 (eq.subset hJ1_union_J2.symm) _,
+    { rw [hJ1J2, set.inter_empty], },
+    rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
+    cases this with h1 h2, 
+    { apply hJ1J2, 
       rw set.mem_inter_iff,
-      split, apply h1, apply right_mem_segment, exact hy2_mem_J2, },
-    { rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
-      apply hJ1J2 y1, 
+      exact ⟨h1 (set.mem_univ _), hy2_mem_J2⟩, },
+    { apply hJ1J2, 
       rw set.mem_inter_iff,
-      split, exact hy1_mem_J1, apply h2, apply left_mem_segment, },
-
-    simp only [subtype.coe_preimage_self, set.univ_inter],
-    rw [← set.preimage_inter, hJ1J2, set.preimage_empty], },
+      exact ⟨hy1_mem_J1, h2 (set.mem_univ _)⟩, }, },
   
   rw ←(inducing_coe).is_preconnected_image, 
-  rw set.image_preimage_eq_of_subset that, 
+  simp only [image_univ, subtype.range_coe_subtype, set_of_mem_eq], 
   exact convex.is_preconnected (convex_segment y1 y2),
-
-  simp only [subtype.range_coe_subtype, set.set_of_mem_eq, set.sep_subset], 
 end
+
 
 example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
 begin
