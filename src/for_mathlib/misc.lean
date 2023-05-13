@@ -11,14 +11,38 @@ import topology.connected
 instance : densely_ordered ereal := with_bot.densely_ordered
 
 -- topology.connected
+-- This is essentially `is_preconnected_iff_subset_of_disjoint_closed`
 lemma is_preconnected.subset_or_subset_of_closed {α : Type*} [topological_space α] 
   {s u v : set α} (hu : is_closed u) (hv : is_closed v) (huv : disjoint u v)
   (hsuv : s ⊆ u ∪ v) (hs : is_preconnected s) :
   s ⊆ u ∨ s ⊆ v :=
 begin
-  rcases hs.subset_or_subset hu.is_open_compl hv.is_open_compl _ _;
-  sorry
+  apply (is_preconnected_iff_subset_of_disjoint_closed.mp hs) u v hu hv hsuv, 
+  rw [set.disjoint_iff_inter_eq_empty.mp huv , set.inter_empty],
 end
+
+-- filter
+variable {α : Type*}
+namespace filter
+
+lemma frequently.congr {f : filter α} {p q : α → Prop} (h' : ∃ᶠ x in f, p x)
+  (h : ∀ᶠ x in f, p x ↔ q x) : ∃ᶠ x in f, q x :=
+h'.mp (h.mono $ λ x hx, hx.mp)
+
+lemma frequently_congr {f : filter α} {p q : α → Prop} (h : ∀ᶠ x in f, p x ↔ q x) :
+  (∃ᶠ x in f, p x) ↔ (∃ᶠ x in f, q x) :=
+⟨λ hp, hp.congr h, λ hq, hq.congr $ by simpa only [iff.comm] using h⟩
+
+lemma frequently_congr' {α : Type*} (f : filter α) (p q : α → Prop)
+  (h : ∀ᶠ (a : α) in f, p a ↔ q a) : (∃ᶠ a in f, p a) ↔ (∃ᶠ a in f, q a) := 
+begin
+  dsimp only [filter.frequently], 
+  rw not_iff_not, 
+  apply filter.eventually_congr,
+  simp_rw not_iff_not, exact h,
+end
+
+end filter
 
 -- Not needed actually...
 
