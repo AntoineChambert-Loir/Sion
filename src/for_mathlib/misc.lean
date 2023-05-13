@@ -42,6 +42,20 @@ begin
   simp_rw not_iff_not, exact h,
 end
 
+
+example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
+begin
+rw cluster_pt_principal_iff_frequently,
+simp only [filter.frequently, not_iff_not,
+filter.eventually],
+rw mem_nhds_iff,
+rw mem_nhds_within,
+split,
+intro H,
+simp,
+end
+
+
 end filter
 
 -- Not needed actually...

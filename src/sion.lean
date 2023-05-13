@@ -182,7 +182,7 @@ begin
     exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
 
     -- This is a rewriting of h in a nicer form, there must be a better way to do
-    have h' : ∃ᶠ (z : F) in nhds ↑y, ∃ (hz : z ∈ segment ℝ y1 y2), 
+    /- have h' : ∃ᶠ (z : F) in nhds ↑y, ∃ (hz : z ∈ segment ℝ y1 y2), 
       (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1,
     { simp only [cluster_pt_principal_iff_frequently, 
         (inducing_coe).nhds_eq_comap, subtype.coe_mk,
@@ -199,19 +199,29 @@ begin
         rw ← h.1, exact hz', },
       { rintro ⟨hz, h⟩,
         use ⟨z, hz⟩, exact ⟨rfl, h⟩, }, },
-
-    -- Now, the goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
+ -/
+    -- The first goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
     simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
     specialize hfx x.val x.prop y (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'),
 
+    suffices : ∃ᶠ z in nhds_within y Y,
+      ∃ (hz : z ∈ segment ℝ y1 y2) , (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1,
 
+    suffices that : ∀ᶠ (z : F) in nhds_within y Y,
+      (∃ (hz : z ∈ segment ℝ y1 y2), (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1) → (∃ (hz : z ∈ segment ℝ y1 y2), x ∈ C t' z ∧ (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1), 
 
-    -- and to conclude using that if ∀ᶠ sth holds, then ∃ᶠ sth holds.
-    -- using  frequently.mp 
+    obtain ⟨z, hz,  hxz, hxz'⟩ := filter.frequently.exists (filter.frequently.mp this that), 
+    exact ⟨⟨z, hz⟩, ⟨hxz', hxz⟩⟩,
+
+    { -- that
+      apply filter.eventually.mp hfx, 
+      apply filter.eventually_of_forall,
+      intros z hzt',
+      rintro ⟨hz, hz'⟩,
+      exact ⟨hz, ⟨le_of_lt hzt', hz'⟩⟩, },
+    { -- this 
     
-    -- needs to have h' in terms of nhds y
-    
-  sorry },
+    sorry, }, },
 
   have hy1_mem_J1 : (⟨y1, left_mem_segment ℝ y1 y2⟩ : segment ℝ y1 y2) ∈ J1, 
   { rw mem_J1_iff, apply hC, exact le_of_lt htt', },
@@ -246,6 +256,12 @@ begin
   simp only [image_univ, subtype.range_coe_subtype, set_of_mem_eq], 
   exact convex.is_preconnected (convex_segment y1 y2),
 end
+
+example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
+begin
+-- cf misc.lean
+end
+
 
 
 example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
