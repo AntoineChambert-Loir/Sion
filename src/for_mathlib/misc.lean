@@ -42,23 +42,6 @@ begin
   simp_rw not_iff_not, exact h,
 end
 
-
-example {α : Type} {p : set α → Prop} (s : set α) : 
-  (∃ (t : set s), p (coe '' t)) ↔ (∃ (t : set α), t ⊆ s ∧ p t) :=
-  subtype.exists_set_subtype p 
-
-example {α : Type*} (s : set α) (u v : set s) : 
-  u ⊆ v ↔ (coe '' u : set α) ⊆ coe '' v := 
-begin
-
-  rw set.image_subset_iff, 
-  rw set.preimage_image_eq _,
-  refine subtype.coe_injective,
-
-
-end
-
-
 lemma cluster_pt_principal_subtype_iff_frequently {α : Type*} [topological_space α] {s t : set α} (hst : s ⊆ t) {J : set s} {a : ↥s} : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
 begin
   simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
@@ -117,7 +100,7 @@ begin
 end
 
 
--- si on enlève le grand ensemble
+-- si on enlève le grand ensemble (c'est pas mieux)
 lemma cluster_pt_principal_subtype_iff_frequently' {α : Type*} [topological_space α] (s : set α) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ (x : α) in nhds_within a s, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J := 
 begin
   simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
