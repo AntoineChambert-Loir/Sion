@@ -79,14 +79,14 @@ end
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
 variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-include hfy cY hfy' hfx cX hfx'
+include hfy cY hfy' hfx ne_X cX hfx'
 
 -- Question pour Antoine : Y-a-t'il une raison pour utiliser `⨅ (x : X), foo x` au lieu de `⨅ x ∈ X, foo x`
 -- (le deuxième évite des coercions) ? Dans `ℝ` ce sera important de faire la distinction parce 
 -- que ça ne donne pas le même résultat (`⨅ x ∈ X, foo x` devient `⨅ (x : E), ⨅ (hx : x ∈ X), foo x` et
 -- l'inf sur l'ensemble vide ne donne rien sur `ℝ`), mais autant profiter à fond de `ereal`, non ?
 
-set_option trace.simp_lemmas true
+include kX
 
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ℝ} (ht : (t : ereal) < ⨅ (x : X), (f x y1) ⊔ (f x y2)) :
@@ -113,9 +113,15 @@ begin
     -- intro x, simp only [set.mem_sep_iff],
     rintro x hxu, exact (le_trans hxu h) } ,
 
-    -- Uses compactness of X !
+    -- Uses that X is compact and nonempty !
   have hC_ne : ∀ z ∈ Y, (C t z).nonempty,
-  sorry,
+  { intros z hz,
+    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_X kX (hfy z hz), 
+    use ⟨x, hx⟩,
+    rw [mem_C_iff, subtype.coe_mk],
+    refine le_trans _ (hinfi_le z hz),
+    rw le_infi_iff, 
+    rintro ⟨x', hx'⟩, exact hx_le x' hx', },
 
   have hC_closed : ∀ u, ∀ {z}, z ∈ Y → is_closed (C u z), 
   { intros u z hz, simp only [C],

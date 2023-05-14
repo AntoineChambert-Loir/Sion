@@ -70,7 +70,7 @@ lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
   ∀ b, ∃ (v : set α), is_closed v ∧ f ⁻¹' (set.Iic b) ∩ s = v ∩ s :=
 sorry
 
-/-- A lower semicontinuous function attains its lowers bound on a nonempty compact set -/
+/-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
 theorem lower_semicontinuous.exists_forall_le_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : lower_semicontinuous_on f s) : 
