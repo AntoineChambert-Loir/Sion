@@ -116,6 +116,8 @@ lemma lower_semicontinuous_inf {g : α → β}
    lower_semicontinuous (λ x, f x ⊓ g x) :=
 λ a, lower_semicontinuous_at_inf a (hf a) (hg a)
 
+-- TODO : add same for upper_semicontinuous
+
 lemma lower_semicontinuous_on_iff_restrict {s : set α} : 
   lower_semicontinuous_on f s ↔
   lower_semicontinuous (s.restrict f) := sorry
