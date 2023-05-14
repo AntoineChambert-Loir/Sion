@@ -149,12 +149,13 @@ begin
       (hC_closed _ hy1) (hC_closed _ hy2) (hC_subset _ hz),
       rw [set.disjoint_iff_inter_eq_empty.mp hC_disj, set.inter_empty], },
 
+
   let J1 := {z : segment ℝ y1 y2 | C t z ⊆ C t' y1},
   -- do we really need this ? (I can't do without it)
   have mem_J1_iff : ∀ (z : segment ℝ y1 y2), z ∈ J1 ↔ C t z ⊆ C t' y1,
   { intro z, refl, },
   
-  have hJ1 : is_closed J1, 
+  have hJ1_closed : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
     intros y h x hx, 
 
@@ -215,14 +216,60 @@ begin
   have hy2_mem_J2 : (⟨y2, right_mem_segment ℝ y1 y2⟩ : segment ℝ y1 y2) ∈ J2,
   { rw mem_J2_iff, apply hC, exact le_of_lt htt', },
   
-  have hJ2 : is_closed J2, sorry, 
+  have hJ2_closed : is_closed J2, 
+  { rw is_closed_iff_cluster_pt, 
+    intros y h x hx, 
 
-  have hJ1J2 : J1 ∩ J2 = ∅, sorry,
-  have hJ1_union_J2 : J1 ∪ J2 = set.univ, sorry,
+    suffices : ∃ z ∈ J2, x ∈ C t' (z : F), 
+    obtain ⟨z, hz, hxz⟩ := this, 
+    suffices : C t' z ⊆ C t' y2, exact this hxz, 
+
+    apply or.resolve_left (hC_subset_or z z.2),
+    intro hz2, 
+
+    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 z.2)),
+    rw ← (disjoint_iff_inter_eq_empty.mp hC_disj), 
+    refine set.subset_inter (subset_trans (hC t t' z (le_of_lt htt')) hz2) hz, 
+
+    -- The first goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
+    simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
+    specialize hfx x.val x.prop y (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'),
+    -- We rewrite h into an ∃ᶠ form
+    rw filter.cluster_pt_principal_subtype_iff_frequently
+      (cY.segment_subset hy1 hy2) at h, 
+
+    suffices this : ∀ᶠ (z : F) in nhds_within y Y,
+      (∃ (hz : z ∈ segment ℝ y1 y2), (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J2) → (∃ (hz : z ∈ segment ℝ y1 y2), x ∈ C t' z ∧ (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J2), 
+    obtain ⟨z, hz,  hxz, hxz'⟩ := filter.frequently.exists (filter.frequently.mp h this), 
+    exact ⟨⟨z, hz⟩, ⟨hxz', hxz⟩⟩,
+
+    { -- this
+      apply filter.eventually.mp hfx, 
+      apply filter.eventually_of_forall,
+      intros z hzt',
+      rintro ⟨hz, hz'⟩,
+      exact ⟨hz, ⟨le_of_lt hzt', hz'⟩⟩, }, },
+
+-- On fait presque deux fois la même chose, il faut unifier les deux trucs.
+
+  have hJ1J2 : J1 ∩ J2 = ∅, 
+  { rw set.eq_empty_iff_forall_not_mem, 
+    rintros z ⟨hz1, hz2⟩,
+    rw mem_J1_iff at hz1, rw mem_J2_iff at hz2,
+    apply set.nonempty.not_subset_empty (hC_ne z (cY.segment_subset hy1 hy2 z.prop)), 
+    rw [set.subset_empty_iff, ← bot_eq_empty, ← disjoint_self],
+    exact set.disjoint_of_subset hz1 hz2 hC_disj, },
+
+  have hJ1_union_J2 : J1 ∪ J2 = set.univ, 
+  { rw ← set.top_eq_univ, rw eq_top_iff, intros z hz,
+    rw set.mem_union, rw mem_J1_iff, rw mem_J2_iff, 
+    cases hC_subset_or z z.prop with h1 h2,
+    left, exact set.subset.trans (hC t t' z (le_of_lt htt')) h1,
+    right, exact set.subset.trans (hC t t' z (le_of_lt htt')) h2, },
 
   suffices this : is_preconnected (set.univ : set (segment ℝ y1 y2)),
   { rw is_preconnected_iff_subset_of_disjoint_closed at this,
-    specialize this _ _ hJ1 hJ2 (eq.subset hJ1_union_J2.symm) _,
+    specialize this _ _ hJ1_closed hJ2_closed (eq.subset hJ1_union_J2.symm) _,
     { rw [hJ1J2, set.inter_empty], },
     rw set.eq_empty_iff_forall_not_mem at hJ1J2, 
     cases this with h1 h2, 
@@ -236,18 +283,6 @@ begin
   rw ←(inducing_coe).is_preconnected_image, 
   simp only [image_univ, subtype.range_coe_subtype, set_of_mem_eq], 
   exact convex.is_preconnected (convex_segment y1 y2),
-end
-
-example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
-begin
--- cf misc.lean
-end
-
-
-
-example (s : set E) (hs : s = ∅) (a : E) (ha : a ∈ s) : false :=
-begin
-exact set.eq_empty_iff_forall_not_mem.mp hs a ha
 end
 
 lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < infi (λ x : X, supr (λ y : s, f x y))) : 
