@@ -55,6 +55,67 @@ variables [linear_order β] [order_closed_topology β]
 
 section lower_semicontinuous
 
+lemma lower_semicontinuous_within_at_sup {g : α → β} (s : set α) (a : α)
+  (hf : lower_semicontinuous_within_at f s a) (hg : lower_semicontinuous_within_at g s a) :
+  lower_semicontinuous_within_at (λ x, f x ⊔ g x) s a :=
+begin
+  intros b hb, 
+  simp only [lt_sup_iff] at hb ⊢,  
+  cases hb with hb hb, 
+  refine eventually.mp (hf b hb) (eventually_of_forall (λ x hx, or.intro_left _ hx)), 
+  refine eventually.mp (hg b hb) (eventually_of_forall (λ x hx, or.intro_right _ hx)), 
+end
+
+lemma lower_semicontinuous_at_sup {g : α → β} (a : α)
+  (hf : lower_semicontinuous_at f a) (hg : lower_semicontinuous_at g a) :
+  lower_semicontinuous_at (λ x, f x ⊔ g x) a :=
+begin
+  intros b hb, 
+  simp only [lt_sup_iff] at hb,  
+  cases hb with hb hb, 
+  refine eventually.mp (hf b hb) (eventually_of_forall
+    (λ x hx, lt_of_lt_of_le hx (le_sup_left))), 
+  refine eventually.mp (hg b hb) (eventually_of_forall
+    (λ x hx, lt_of_lt_of_le hx (le_sup_right))),
+end
+
+lemma lower_semicontinuous_on_sup {s : set α} {g : α → β}
+  (hf : lower_semicontinuous_on f s) (hg : lower_semicontinuous_on g s) :
+  lower_semicontinuous_on (λ x, f x ⊔ g x) s :=  λ a ha, lower_semicontinuous_within_at_sup s a (hf a ha) (hg a ha)
+
+lemma lower_semicontinuous_sup {g : α → β}
+  (hf : lower_semicontinuous f) (hg : lower_semicontinuous g) :
+  lower_semicontinuous (λ x, f x ⊔ g x) := 
+λ a, lower_semicontinuous_at_sup a (hf a) (hg a)
+
+lemma lower_semicontinuous_within_at_inf {g : α → β} (s : set α) (a : α)
+  (hf : lower_semicontinuous_within_at f s a) (hg : lower_semicontinuous_within_at g s a) :
+   lower_semicontinuous_within_at (λ x, f x ⊓ g x) s a :=
+begin
+  intros b hb, 
+  simp only [lt_inf_iff] at hb ⊢, 
+  exact eventually.and (hf b hb.1) (hg b hb.2),
+end
+
+lemma lower_semicontinuous_at_inf {g : α → β} (a : α)
+  (hf : lower_semicontinuous_at f a) (hg : lower_semicontinuous_at g a) :
+   lower_semicontinuous_at (λ x, f x ⊓ g x) a :=
+begin
+  intros b hb,
+  simp only [lt_inf_iff] at hb ⊢,
+  exact eventually.and (hf b hb.1) (hg b hb.2),
+end
+
+lemma lower_semicontinuous_on_inf {g : α → β} (s : set α)
+  (hf : lower_semicontinuous_on f s) (hg : lower_semicontinuous_on g s) :
+   lower_semicontinuous_on (λ x, f x ⊓ g x) s :=
+λ a ha, lower_semicontinuous_within_at_inf s a (hf a ha) (hg a ha)
+
+lemma lower_semicontinuous_inf {g : α → β} 
+  (hf : lower_semicontinuous f) (hg : lower_semicontinuous g) :
+   lower_semicontinuous (λ x, f x ⊓ g x) :=
+λ a, lower_semicontinuous_at_inf a (hf a) (hg a)
+
 lemma lower_semicontinuous_on_iff_restrict {s : set α} : 
   lower_semicontinuous_on f s ↔
   lower_semicontinuous (s.restrict f) := sorry
