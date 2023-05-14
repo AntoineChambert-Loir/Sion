@@ -81,10 +81,15 @@ variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy'
 
 include hfy cY hfy' hfx ne_X cX hfx'
 
--- Question pour Antoine : Y-a-t'il une raison pour utiliser `⨅ (x : X), foo x` au lieu de `⨅ x ∈ X, foo x`
+-- Question pour Antoine : Y-a-t-il une raison pour utiliser `⨅ (x : X), foo x` au lieu de `⨅ x ∈ X, foo x`
 -- (le deuxième évite des coercions) ? Dans `ℝ` ce sera important de faire la distinction parce 
 -- que ça ne donne pas le même résultat (`⨅ x ∈ X, foo x` devient `⨅ (x : E), ⨅ (hx : x ∈ X), foo x` et
 -- l'inf sur l'ensemble vide ne donne rien sur `ℝ`), mais autant profiter à fond de `ereal`, non ?
+
+-- Réponse : a priori, aucune, je ne sais même pas pourquoi j'entre l'une et pas l'autre. 
+
+-- Question : quelle est la différence dans ℝ ?
+-- (à part que l'inf sur l'ensemble vide est alors 0 et pas + infini !)
 
 include kX
 
@@ -285,8 +290,85 @@ begin
   exact convex.is_preconnected (convex_segment y1 y2),
 end
 
-lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < infi (λ x : X, supr (λ y : s, f x y))) : 
-  ∃ y0 ∈ Y,  (t : ereal) < infi (λ x : X, f x y0) := sorry
+lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < infi (λ x : X, supr (λ y : s, f x y))) :
+  s ⊆ Y → ∃ y0 ∈ Y,  (t : ereal) < infi (λ x : X, f x y0) :=
+begin
+  revert X, 
+--  
+--  revert ht,
+  apply hs.induction_on, 
+  { -- empty case 
+    intros X ne_X cX kX hfx hfx' hfy hfy', 
+    haveI : nonempty X := nonempty.coe_sort ne_X,  
+    simp only [csupr_of_empty, cinfi_const, not_lt_bot, is_empty.forall_iff], },
+
+  intros b s has hs hrec X ne_X cX kX hfx hfx' hfy hfy' ht hs'Y, 
+  have hb : b ∈ Y := hs'Y (mem_insert b s), 
+  -- obtain ⟨t' : ereal, htt', ht'_lt_infi_supr⟩ :=  exists_between ht, 
+  let X' := { x ∈ X | f x b ≤ t },
+  cases set.eq_empty_or_nonempty X' with X'_e X'_ne,
+  { -- X' = ∅, 
+    use b, split, apply hs'Y, exact mem_insert b s,
+
+/-    apply lt_of_lt_of_le htt',  
+  rw le_infi_iff,
+    
+    rintro ⟨x, hx⟩,
+    suffices : x ∉ X', 
+    simp only [mem_sep_iff, not_and, not_le] at this,
+    exact le_of_lt (this hx), 
+    rw X'_e, exact not_mem_empty x, -/
+  
+    -- version d'avant, lorsqu'on avait t'=t
+    rw ← not_le,
+    intro h, 
+    rw set.eq_empty_iff_forall_not_mem  at X'_e,
+    
+    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_X kX (hfy b hb), 
+    specialize X'_e x, 
+    apply X'_e, simp only [set.mem_sep_iff], 
+    apply and.intro hx, 
+    refine le_trans _ h,
+    rw le_infi_iff, 
+    rintro ⟨x, hx⟩, exact hx_le x hx, },
+  
+  suffices kX' : is_compact X',
+  suffices cX' : convex ℝ X', 
+  suffices hX'X : X' ⊆ X, 
+  { 
+    specialize hrec X' X'_ne cX' kX', 
+    obtain ⟨y1, hy1, hty1⟩ := hrec _ _ _ _ _ _,
+    { refine exists_lt_infi_of_lt_infi_of_two X ne_X cX kX Y cY f hfx hfx' hfy hfy' hb hy1 _, 
+
+      suffices : lower_semicontinuous_on (λ x, f x b ⊔ f x y1) X,
+      obtain ⟨a, ha, hfa_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_X kX this,
+      suffices : infi (λ x : X, f x b ⊔ f x y1) = f a b ⊔ f a y1,
+      rw this,
+      by_cases ha' : a ∈ X',
+      { refine lt_of_lt_of_le hty1 _, 
+        refine le_trans _ (le_sup_right),
+        refine infi_le _ (⟨a, ha'⟩ : X'), },
+      { simp only [mem_sep_iff, not_and, not_le] at ha', 
+        exact lt_of_lt_of_le (ha' ha) (le_sup_left), },
+      
+      { apply le_antisymm, 
+        apply infi_le _ (⟨a, ha⟩ : X),
+        rw le_infi_iff, rintros ⟨x, hx⟩, exact hfa_le x hx, },
+      { apply lower_semicontinuous_on_sup, 
+        exact hfy b hb, exact hfy y1 hy1, }, },
+    { intros x hx', exact hfx x (hX'X hx'), },
+    { intros x hx', exact hfx' x (hX'X hx'), },
+    { intros y hy, apply lower_semicontinuous_on.mono (hfy y hy) hX'X, },
+    { intros y hy, exact cX'.quasiconvex_on_restrict (hfy' y hy) hX'X, },
+    { sorry, },
+    { apply subset.trans (subset_insert b s) hs'Y, }, },
+
+  { intros x, simp only [mem_sep_iff], exact and.elim_left, },
+
+  { sorry, },
+  { sorry, },
+end
+
 
 theorem minimax : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := sorry
