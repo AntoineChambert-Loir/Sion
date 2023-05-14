@@ -43,16 +43,83 @@ begin
 end
 
 
+example {α : Type} {p : set α → Prop} (s : set α) : 
+  (∃ (t : set s), p (coe '' t)) ↔ (∃ (t : set α), t ⊆ s ∧ p t) :=
+  subtype.exists_set_subtype p 
+
+example {α : Type*} (s : set α) (u v : set s) : 
+  u ⊆ v ↔ (coe '' u : set α) ⊆ coe '' v := 
+begin
+
+  rw set.image_subset_iff, 
+  rw set.preimage_image_eq _,
+  refine subtype.coe_injective,
+
+
+end
+
+
 example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
 begin
-rw cluster_pt_principal_iff_frequently,
-simp only [filter.frequently, not_iff_not,
-filter.eventually],
-rw mem_nhds_iff,
-rw mem_nhds_within,
-split,
-intro H,
-simp,
+  simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
+  simp only [exists_prop, not_exists],
+  split,
+  { rintro ⟨v, hv_subset, hv_open, hav⟩,
+    obtain ⟨u, hu, hut⟩ := (inducing_coe).is_open_iff.mp hv_open, 
+    use u, 
+    apply and.intro hu,
+    simp only [←hut, set.mem_preimage] at hav, 
+    apply and.intro hav, 
+    intros x hx, 
+    simp only [set.mem_set_of_eq], 
+    intro hxs, 
+    apply hv_subset, 
+    rw ← hut,  
+    rw set.mem_preimage,
+    rw set.mem_inter_iff at hx, exact hx.1, },
+  { rintro ⟨u, hu_open, hat, hut_subset⟩,
+    use coe ⁻¹' u,
+    split, 
+    rintros ⟨x, hx⟩ hx', rw set.mem_preimage at hx', 
+    apply hut_subset, 
+    exact ⟨hx', hst hx⟩, 
+    exact ⟨is_open_induced hu_open, hat⟩, },
+end
+
+-- Essayons de faire plus simple
+example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
+begin
+  simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
+  simp only [exists_prop, not_exists],
+  suffices : ∀ (t : set s), 
+    t ⊆ { x : s | x ∉ J} ∧ is_open t ∧ a ∈ t 
+    ↔ (λ u, (u ⊆ coe '' {x : s | x ∉ J} ∧ is_open u ∧ ↑a ∈ u) : set α → Prop) (coe '' t),
+  rw exists_congr this, 
+  rw subtype.exists_set_subtype (λ u, (u ⊆ coe '' {x : s | x ∉ J} ∧ is_open u ∧ ↑a ∈ u) : set α → Prop),
+  apply exists_congr, 
+  intro u,
+  
+  split,
+  { rintro ⟨v, hv_subset, hv_open, hav⟩,
+    obtain ⟨u, hu, hut⟩ := (inducing_coe).is_open_iff.mp hv_open, 
+    use u, 
+    apply and.intro hu,
+    simp only [←hut, set.mem_preimage] at hav, 
+    apply and.intro hav, 
+    intros x hx, 
+    simp only [set.mem_set_of_eq], 
+    intro hxs, 
+    apply hv_subset, 
+    rw ← hut,  
+    rw set.mem_preimage,
+    rw set.mem_inter_iff at hx, exact hx.1, },
+  { rintro ⟨u, hu_open, hat, hut_subset⟩,
+    use coe ⁻¹' u,
+    split, 
+    rintros ⟨x, hx⟩ hx', rw set.mem_preimage at hx', 
+    apply hut_subset, 
+    exact ⟨hx', hst hx⟩, 
+    exact ⟨is_open_induced hu_open, hat⟩, },
 end
 
 
