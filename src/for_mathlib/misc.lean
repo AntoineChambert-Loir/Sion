@@ -42,7 +42,22 @@ begin
   simp_rw not_iff_not, exact h,
 end
 
+
 lemma cluster_pt_principal_subtype_iff_frequently {α : Type*} [topological_space α] {s t : set α} (hst : s ⊆ t) {J : set s} {a : ↥s} : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
+begin
+  rw [nhds_within_eq_map_subtype_coe (hst a.prop), filter.frequently_map,
+    cluster_pt_principal_iff_frequently, (inducing_coe).nhds_eq_comap,
+    filter.frequently_comap, (inducing_coe).nhds_eq_comap,
+    filter.frequently_comap, subtype.coe_mk],
+  apply frequently_congr,
+  apply eventually_of_forall,
+  intro x,
+  simp only [subtype.coe_mk, set_coe.exists, exists_and_distrib_left, exists_eq_left],
+  exact ⟨λ ⟨h, hx⟩, ⟨hst h, h, hx⟩, λ ⟨h, hx⟩, hx⟩,
+end
+
+-- Ancienne version
+example {α : Type*} [topological_space α] {s t : set α} (hst : s ⊆ t) {J : set s} {a : ↥s} : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
 begin
   simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
   simp only [exists_prop, not_exists],
