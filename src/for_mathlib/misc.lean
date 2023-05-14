@@ -59,7 +59,7 @@ begin
 end
 
 
-example {α : Type*} [topological_space α] (s t : set α) (hst : s ⊆ t) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
+lemma cluster_pt_principal_subtype_iff_frequently {α : Type*} [topological_space α] {s t : set α} (hst : s ⊆ t) {J : set s} {a : ↥s} : cluster_pt a (filter.principal J) ↔ ∃ᶠ x in nhds_within a t, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J  := 
 begin
   simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
   simp only [exists_prop, not_exists],
@@ -117,14 +117,35 @@ begin
 end
 
 
-end filter
-
-example {α : Type*} (p : α→ Prop ) (a : α) :
-  ∃ (x : α), p x ∧ x = a ↔  p a :=
+-- si on enlève le grand ensemble
+lemma cluster_pt_principal_subtype_iff_frequently' {α : Type*} [topological_space α] (s : set α) (J : set s) (a : ↥s) : cluster_pt a (filter.principal J) ↔ ∃ᶠ (x : α) in nhds_within a s, ∃ (h : x ∈ s), (⟨x, h⟩ : s) ∈ J := 
 begin
-
-library_search
+  simp only [cluster_pt_principal_iff_frequently, filter.frequently, not_iff_not, filter.eventually, mem_nhds_iff, mem_nhds_within],
+  simp only [exists_prop, not_exists],
+  split,
+  { rintro ⟨v, hv_subset, hv_open, hav⟩,
+    obtain ⟨u, hu, hut⟩ := (inducing_coe).is_open_iff.mp hv_open, 
+    use u, 
+    apply and.intro hu,
+    simp only [←hut, set.mem_preimage] at hav, 
+    apply and.intro hav, 
+    intros x hx, 
+    simp only [set.mem_set_of_eq], 
+    intro hxs, 
+    apply hv_subset, 
+    rw ← hut,  
+    rw set.mem_preimage,
+    rw set.mem_inter_iff at hx, exact hx.1, },
+  { rintro ⟨u, hu_open, hat, hut_subset⟩,
+    use coe ⁻¹' u,
+    split, 
+    rintros ⟨x, hx⟩ hx', rw set.mem_preimage at hx', 
+    apply hut_subset, 
+    exact ⟨hx', hx⟩, 
+    exact ⟨is_open_induced hu_open, hat⟩, },
 end
+
+end filter
 
 
 -- Not needed actually...

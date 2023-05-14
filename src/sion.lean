@@ -139,8 +139,6 @@ begin
     exact le_trans hfx'.2 hx },
   have hC_subset_or : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∨ C t' z ⊆ C t' y2, 
   { intros z hz, 
-  /-    exact (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)).subset_or_subset_of_closed 
-      (hC_closed _ hy1) (hC_closed _ hy2) hC_disj (hC_subset _ hz), -/
       apply is_preconnected_iff_subset_of_disjoint_closed.mp (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)) _ _
       (hC_closed _ hy1) (hC_closed _ hy2) (hC_subset _ hz),
       rw [set.disjoint_iff_inter_eq_empty.mp hC_disj, set.inter_empty], },
@@ -181,47 +179,24 @@ begin
     apply set.subset_inter hz, 
     exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
 
-    -- This is a rewriting of h in a nicer form, there must be a better way to do
-    /- have h' : ∃ᶠ (z : F) in nhds ↑y, ∃ (hz : z ∈ segment ℝ y1 y2), 
-      (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1,
-    { simp only [cluster_pt_principal_iff_frequently, 
-        (inducing_coe).nhds_eq_comap, subtype.coe_mk,
-        set.mem_preimage, filter.frequently_comap, subtype.coe_prop, 
-        exists_prop] at h, 
-      suffices : _, 
-      exact (filter.frequently_congr this).mp h, 
-      apply filter.eventually_of_forall,
-      intro z,
-      split,
-      { rintro ⟨⟨z', hz'⟩, h⟩, 
-        suffices hz : z ∈ segment ℝ y1 y2, use hz, 
-        convert h.2, rw [← h.1, subtype.coe_mk],
-        rw ← h.1, exact hz', },
-      { rintro ⟨hz, h⟩,
-        use ⟨z, hz⟩, exact ⟨rfl, h⟩, }, },
- -/
     -- The first goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
     simp only [upper_semicontinuous_on, upper_semicontinuous_within_at] at hfx,
     specialize hfx x.val x.prop y (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'),
+    -- We rewrite h into an ∃ᶠ form
+    rw filter.cluster_pt_principal_subtype_iff_frequently
+      (cY.segment_subset hy1 hy2) at h, 
 
-    suffices : ∃ᶠ z in nhds_within y Y,
-      ∃ (hz : z ∈ segment ℝ y1 y2) , (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1,
-
-    suffices that : ∀ᶠ (z : F) in nhds_within y Y,
+    suffices this : ∀ᶠ (z : F) in nhds_within y Y,
       (∃ (hz : z ∈ segment ℝ y1 y2), (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1) → (∃ (hz : z ∈ segment ℝ y1 y2), x ∈ C t' z ∧ (⟨z, hz⟩ : segment ℝ y1 y2) ∈ J1), 
-
-    obtain ⟨z, hz,  hxz, hxz'⟩ := filter.frequently.exists (filter.frequently.mp this that), 
+    obtain ⟨z, hz,  hxz, hxz'⟩ := filter.frequently.exists (filter.frequently.mp h this), 
     exact ⟨⟨z, hz⟩, ⟨hxz', hxz⟩⟩,
 
-    { -- that
+    { -- this
       apply filter.eventually.mp hfx, 
       apply filter.eventually_of_forall,
       intros z hzt',
       rintro ⟨hz, hz'⟩,
-      exact ⟨hz, ⟨le_of_lt hzt', hz'⟩⟩, },
-    { -- this 
-    
-    sorry, }, },
+      exact ⟨hz, ⟨le_of_lt hzt', hz'⟩⟩, }, },
 
   have hy1_mem_J1 : (⟨y1, left_mem_segment ℝ y1 y2⟩ : segment ℝ y1 y2) ∈ J1, 
   { rw mem_J1_iff, apply hC, exact le_of_lt htt', },
