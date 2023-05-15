@@ -50,6 +50,8 @@ lemma is_total.directed {α : Type*} {ι : Sort*} (r : α → α → Prop) [is_t
   directed r f :=
 λ i j, or.cases_on (total_of r (f i) (f j)) (λ h, ⟨j, h, refl _⟩) (λ h, ⟨i, refl _, h⟩)
 
+section linear_order
+
 variables {β α : Type*} [topological_space α] [topological_space β] {f : α → β}
 variables [linear_order β] [order_closed_topology β] 
 
@@ -197,6 +199,79 @@ lemma upper_semicontinuous.bdd_above_of_is_compact [nonempty β] {s : set α}
 @lower_semicontinuous.bdd_below_of_is_compact (βᵒᵈ) _ _ _ _ _ _ _ s hs hf
 
 end upper_semicontinuous
+
+end linear_order
+
+section complete_linear_order
+
+variables {β α : Type*} [topological_space α] [topological_space β] {f : α → β}
+variables [complete_linear_order β] [order_closed_topology β] 
+
+/-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
+theorem lower_semicontinuous.exists_infi_of_is_compact {s : set α} 
+  (ne_s : s.nonempty) (hs : is_compact s)
+  (hf : lower_semicontinuous_on f s) : 
+  ∃ (a ∈ s), f a = ⨅ x ∈ s, f x := 
+begin
+  obtain ⟨a, ha, ha_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_s hs hf,
+  use a, apply and.intro ha,
+  apply le_antisymm, 
+  rw le_infi₂_iff, intros x hx, exact ha_le x hx,
+  exact infi₂_le a ha,
+end
+
+theorem lower_semicontinuous_within_at_infi₂ {ι : Type*} {f : ι → α → β} {s : set α} {a : α} {I : set ι}
+  (hf : ∀ i, lower_semicontinuous_within_at (f i) s a) :
+  lower_semicontinuous_within_at (λ x, ⨅ i ∈ I, f i x) s a :=
+  sorry
+
+theorem lower_semicontinuous_on_infi₂ {ι : Type*} {f : ι → α → β} {s : set α} {I : set ι}
+  (hf : ∀ i, lower_semicontinuous_on (f i) s) :
+  lower_semicontinuous_on (λ x, ⨅ i ∈ I, f i x) s :=
+  sorry
+
+theorem lower_semicontinuous_at_infi₂ {ι : Type*} {f : ι → α → β} {a : α} {I : set ι}
+  (hf : ∀ i, lower_semicontinuous_at (f i) a) :
+  lower_semicontinuous_at (λ x, ⨅ i ∈ I, f i x) a :=
+  sorry
+
+theorem lower_semicontinuous_infi₂ {ι : Type*} {f : ι → α → β} {I : set ι}
+  (hf : ∀ i, lower_semicontinuous (f i)) :
+  lower_semicontinuous (λ x, ⨅ i ∈ I, f i x) :=
+  sorry
+
+
+/-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
+theorem upper_semicontinuous.exists_supr_of_is_compact {s : set α} 
+  (ne_s : s.nonempty) (hs : is_compact s)
+  (hf : upper_semicontinuous_on f s) : 
+  ∃ (a ∈ s), f a = ⨆ x ∈ s, f x := 
+@lower_semicontinuous.exists_infi_of_is_compact (βᵒᵈ) _ _ _ _ _ _ _ ne_s hs hf
+
+
+theorem upper_semicontinuous_within_at_supr₂ {ι : Type*} {f : ι → α → β} {s : set α} {a : α} {I : set ι}
+  (hf : ∀ i, upper_semicontinuous_within_at (f i) s a) :
+  upper_semicontinuous_within_at (λ x, ⨅ i ∈ I, f i x) s a :=
+  sorry
+
+theorem upper_semicontinuous_on_supr₂ {ι : Type*} {f : ι → α → β} {s : set α} {I : set ι}
+  (hf : ∀ i, upper_semicontinuous_on (f i) s) :
+  upper_semicontinuous_on (λ x, ⨅ i ∈ I, f i x) s :=
+  sorry
+
+theorem upper_semicontinuous_at_supr₂ {ι : Type*} {f : ι → α → β} {a : α} {I : set ι}
+  (hf : ∀ i, upper_semicontinuous_at (f i) a) :
+  upper_semicontinuous_at (λ x, ⨅ i ∈ I, f i x) a :=
+  sorry
+
+theorem upper_semicontinuous_supr₂ {ι : Type*} {f : ι → α → β} {I : set ι}
+  (hf : ∀ i, upper_semicontinuous (f i)) :
+  upper_semicontinuous (λ x, ⨅ i ∈ I, f i x) :=
+  sorry
+
+
+
+end complete_linear_order
 
 end semicontinuity
 
