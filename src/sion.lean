@@ -613,11 +613,10 @@ begin
     apply X'_e, simp only [set.mem_sep_iff], 
     exact ⟨hx, le_trans (le_infi₂_iff.mpr hx_le) h⟩, },
   
-  suffices kX' : is_compact X',
-  suffices cX' : convex ℝ X', 
   suffices hX'X : X' ⊆ X, 
-  suffices lt_of : ∀ (f g : E → ereal) (hg : lower_semicontinuous_on g X)
-    (hf_le_g : ∀ x ∈ X, f x ≤ g x), ⨅ x ∈ X', f x  < ⨅ x ∈ X, g x, 
+  suffices kX' : is_compact X',
+  have cX' : convex ℝ X' := hfy' b hb t, 
+  --suffices lt_of : ∀ (f g : E → ereal) (hg : lower_semicontinuous_on g X)(hf_le_g : ∀ x ∈ X, f x ≤ g x), ⨅ x ∈ X', f x  < ⨅ x ∈ X, g x, 
 
   { 
     specialize hrec X' X'_ne cX' kX', 
@@ -641,12 +640,32 @@ begin
     { intros y hy, exact cX'.quasiconvex_on_restrict (hfy' y hy) hX'X, },
     { sorry, },
     { apply subset.trans (subset_insert b s) hs'Y, }, },
-  sorry, -- peut-être à virer
+  
+  
+  { suffices this : X' = coe '' (coe ⁻¹' X' : set X), 
+    rw this, rw (inducing_coe).is_compact_iff, 
+    haveI : compact_space ↥X := is_compact_iff_compact_space.mp kX,
+    apply is_closed.is_compact, 
+    rw (inducing_coe).is_closed_iff,
+
+    specialize hfy b hb, 
+    rw lower_semicontinuous_on_iff_preimage_Iic at hfy,
+    obtain ⟨v, hv, hv'⟩ := hfy t, 
+    use v, 
+    apply and.intro hv, 
+    rw subtype.preimage_coe_eq_preimage_coe_iff,
+    rw ← hv',
+    ext x,simp only [mem_inter_iff, mem_preimage, mem_Iic, mem_sep_iff, and.congr_left_iff, iff_and_self],
+    exact λ w z, w, 
+
+    rw set.image_preimage_eq_inter_range,
+    simp only [subtype.range_coe_subtype, set_of_mem_eq],
+    rw set.inter_eq_self_of_subset_left hX'X, },
+
   { intros x, simp only [mem_sep_iff], exact and.elim_left, },
 
-  { sorry, },
-  { sorry, },
 end
+
 
 theorem minimax : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 

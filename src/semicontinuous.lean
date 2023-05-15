@@ -130,10 +130,72 @@ lemma lower_semicontinuous_on_iff_preimage_Ioi {s : set α} :
   ∃ (u : set α), is_open u ∧ f ⁻¹' (set.Ioi b) ∩ s = u ∩ s :=
 sorry
 
+/- This is ridiculously difficult ! -/
 lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
   lower_semicontinuous_on f s ↔ 
   ∀ b, ∃ (v : set α), is_closed v ∧ f ⁻¹' (set.Iic b) ∩ s = v ∩ s :=
-sorry
+begin
+  split,
+  { intro hf, 
+    intro b, 
+    use closure (f ⁻¹' Iic b ∩ s),
+    simp only [is_closed_closure, true_and],
+    apply subset.antisymm,
+    rintros a ha, exact ⟨subset_closure ha, ha.2⟩, 
+    
+    rintros a ⟨hab, has⟩,
+    apply and.intro _ has,
+    simp only [mem_preimage, mem_Iic], 
+     simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hf, 
+    rw ← not_lt, intro hb,
+    simp only [mem_closure_iff_frequently, mem_preimage, mem_Iic, mem_inter_iff] at hab,
+    apply hab,
+    dsimp, 
+    specialize hf a has b hb,
+    simp only [filter.eventually] at hf ⊢,
+    simp only [nhds_within, filter.mem_inf_iff] at hf, 
+    obtain ⟨u, hu, v, hv, huv⟩ := hf, 
+    simp only [mem_principal] at hv, 
+    simp_rw [not_and_distrib, not_le],
+    rw set.set_of_or, rw huv, 
+    apply filter.mem_of_superset hu, 
+    intros x hx,
+    by_cases hx' : x ∈ s,
+    left, exact ⟨hx, hv hx'⟩,
+    right, exact hx', },
+  { intro hf, 
+    simp only [lower_semicontinuous_on, lower_semicontinuous_within_at], 
+    intros a ha b hb,
+    simp only [filter.eventually, nhds_within, filter.mem_inf_iff],
+    
+    obtain ⟨v, hv_closed, hv⟩ := hf b, 
+    simp only [filter.mem_principal],
+    use (vᶜ ∪ sᶜ),
+    split,
+    apply filter.mem_of_superset,
+
+    apply is_open.mem_nhds , 
+    { rw is_open_compl_iff, exact hv_closed, },
+    { simp only [mem_compl_iff], intro hav, 
+      rw ← not_le at hb, apply hb, 
+      rw ← mem_Iic, rw ← set.mem_preimage, 
+      apply set.inter_subset_left,
+      rw hv, exact ⟨hav, ha⟩, },
+    exact vᶜ.subset_union_left sᶜ,
+
+    use ({ x : α | b < f x} ∪ s), 
+    split, 
+    apply set.subset_union_right,
+
+    rw ← compl_inj_iff,
+    simp only [set.compl_inter, set.compl_union, compl_compl], 
+
+    rw ← hv, 
+    suffices : f ⁻¹' Iic b = { x : α | b < f x }ᶜ,
+    rw this, 
+    rw set.inter_union_compl,
+    ext x, simp only [mem_preimage, mem_Iic, mem_compl_iff, mem_set_of_eq, not_lt], },
+end
 
 /-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
 theorem lower_semicontinuous.exists_forall_le_of_is_compact {s : set α} 
