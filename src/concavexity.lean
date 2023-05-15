@@ -5,6 +5,42 @@ import data.real.ereal
 
 open set
 
+
+section restriction
+
+variables {𝕜 E β : Type*}[ordered_semiring 𝕜] [add_comm_monoid E] [ordered_add_comm_monoid β] [has_smul 𝕜 E] 
+variables {s : set E} {f : E → β}
+
+lemma set.sep_of_subset {α : Type*} {s t : set α}
+  {p : α → Prop} (hst : s ⊆ t) : 
+  {x ∈ s | p x} = {x ∈ t | p x} ∩ s := 
+begin
+  ext x, simp only [mem_sep_iff, mem_inter_iff],  
+  rw [and_assoc, and_comm], 
+  simp only [iff_and_self, and_imp], 
+  exact λ h h', hst h',
+end
+
+lemma convex.quasiconvex_on_restrict {t : set E} 
+(hf : quasiconvex_on 𝕜 s f) (hst : t ⊆ s) (ht : convex 𝕜 t) : 
+quasiconvex_on 𝕜 t f := 
+begin
+  intro b, 
+  rw set.sep_of_subset hst, 
+  exact convex.inter (hf b) ht, 
+end
+
+lemma convex.quasiconcave_on_restrict {t : set E} 
+(hf : quasiconcave_on 𝕜 s f) (hst : t ⊆ s) (ht : convex 𝕜 t) : 
+quasiconcave_on 𝕜 t f := 
+begin
+  intro b, 
+  rw set.sep_of_subset hst, 
+  exact convex.inter (hf b) ht, 
+end
+
+end restriction
+
 section quasiconcave
 
 /- We prove that a lsc quasiconcave function on a nonempty compact convex set 
@@ -13,6 +49,8 @@ is bounded above and attains its upper bound.
 Maybe the result is false, I don't know. 
 
 -/
+
+
 variables 
  {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E] [has_continuous_smul ℝ E]
 variable {f : E → ereal}
