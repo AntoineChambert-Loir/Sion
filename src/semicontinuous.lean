@@ -283,7 +283,7 @@ begin
 end
 
 theorem lower_semicontinuous_within_at_infi₂ {ι : Type*} {f : ι → α → β} {s : set α} {a : α} {I : set ι}
-  (hf : ∀ i, lower_semicontinuous_within_at (f i) s a) :
+  (hf : ∀ i ∈ I, lower_semicontinuous_within_at (f i) s a) :
   lower_semicontinuous_within_at (λ x, ⨅ i ∈ I, f i x) s a :=
   sorry
 
@@ -302,6 +302,42 @@ theorem lower_semicontinuous_infi₂ {ι : Type*} {f : ι → α → β} {I : se
   lower_semicontinuous (λ x, ⨅ i ∈ I, f i x) :=
   sorry
 
+theorem lower_semicontinuous_within_at_supr₂ {ι : Type*} {f : ι → α → β} {s : set α} {a : α} {I : set ι}
+  (hI : I.finite) (hf : ∀ i ∈ I, lower_semicontinuous_within_at (f i) s a) :
+  lower_semicontinuous_within_at (λ x, ⨆ i ∈ I, f i x) s a :=
+begin
+  revert hf,
+  apply hI.induction_on,
+  { intro hf,
+    simp only [mem_empty_iff_false, csupr_false, supr_bot], 
+    exact lower_semicontinuous_within_at_const, },
+  intros j J hjJ hJ hrec hf,
+  suffices : ∀ x, (⨆ (i : ι) (H : i ∈ insert j J), f i x) = (f j x) ⊔ (⨆ i ∈ J, f i x), 
+  rw funext this,
+  apply lower_semicontinuous_within_at_sup s a (hf j (set.mem_insert j J)),
+  apply hrec,
+  intros i hi, exact hf i (set.mem_insert_of_mem j hi),
+  intro x,
+  simp only [set.insert_eq],
+  rw supr_union,
+  apply congr_arg2 _ _ rfl,
+  simp only [mem_singleton_iff, supr_supr_eq_left],
+end
+
+theorem lower_semicontinuous_on_supr₂ {ι : Type*} {f : ι → α → β} {s : set α} {I : set ι} (hI : I.finite)
+  (hf : ∀ i ∈ I, lower_semicontinuous_on (f i) s) :
+  lower_semicontinuous_on (λ x, ⨆ i ∈ I, f i x) s := λ a ha,
+lower_semicontinuous_within_at_supr₂ hI (λ i hi, hf i hi a ha)
+
+theorem lower_semicontinuous_at_supr₂ {ι : Type*} {f : ι → α → β} {a : α} {I : set ι} (hI : I.finite)
+  (hf : ∀ i, lower_semicontinuous_at (f i) a) :
+  lower_semicontinuous_at (λ x, ⨆ i ∈ I, f i x) a :=
+  sorry
+
+theorem lower_semicontinuous_supr₂ {ι : Type*} {f : ι → α → β} {I : set ι} (hI : I.finite)
+  (hf : ∀ i, lower_semicontinuous (f i)) :
+  lower_semicontinuous (λ x, ⨆ i ∈ I, f i x) :=
+  sorry
 
 /-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
 theorem upper_semicontinuous.exists_supr_of_is_compact {s : set α} 
