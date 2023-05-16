@@ -638,7 +638,25 @@ begin
     { intros x hx', exact hfx' x (hX'X hx'), },
     { intros y hy, apply lower_semicontinuous_on.mono (hfy y hy) hX'X, },
     { intros y hy, exact cX'.quasiconvex_on_restrict (hfy' y hy) hX'X, },
-    { sorry, },
+    { /- sinon, si  infi x ∈ X', supr y ∈ s f x y ≤ t
+        pour tout t' > t, il existe x ∈ X', supr y ∈ s f x y ≤ t',
+        comme x ∈ X' et t ≤ t', on  a supr y ∈ insert b s f x y  ≤ t', 
+        donc infi x ∈ X, supr y ∈ insert b s, f x y ≤ t',
+        donc infi x ∈ X, supr y ∈ insert b s, f x y ≤ t    
+      -/
+      rw [← not_le, infi₂_le_iff] at ht ⊢,
+      push_neg at ht ⊢, 
+      obtain ⟨t', ht', htt'⟩ := ht,
+      use t', apply and.intro _ htt',
+      intros x hx, 
+      specialize ht' x (hX'X hx),
+      simp only [set.insert_eq] at ht', 
+      rw supr_union at ht', 
+      simp only [mem_singleton_iff, supr_supr_eq_left, le_sup_iff] at ht', 
+      apply or.resolve_left ht', 
+      rw not_le,
+      apply lt_of_le_of_lt _ htt',
+      exact hx.2, },
     { apply subset.trans (subset_insert b s) hs'Y, }, },
   
   
@@ -663,9 +681,7 @@ begin
     rw set.inter_eq_self_of_subset_left hX'X, },
 
   { intros x, simp only [mem_sep_iff], exact and.elim_left, },
-
 end
-
 
 theorem minimax : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 

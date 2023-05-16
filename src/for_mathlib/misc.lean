@@ -7,6 +7,18 @@ import topology.connected
 
 -/
 
+-- order.complete_lattice
+lemma infi₂_le_iff {α β : Type*} [complete_lattice β] {f : α → β} {s : set α} {b : β} :
+  ((⨅ x ∈ s, f x) ≤ b)  ↔ ∀ b', (∀ x ∈ s, b' ≤ f x) → b' ≤ b :=
+begin
+  rw infi_le_iff, apply forall_congr, 
+  intro b', simp_rw le_infi_iff,
+end
+
+lemma le_supr₂_iff {α β : Type*} [complete_lattice β] {f : α → β} {s : set α} {b : β} :
+  (b ≤ (⨆ x ∈ s, f x))  ↔ ∀ b', (∀ x ∈ s, f x ≤ b') → b ≤ b' :=
+@infi₂_le_iff α (βᵒᵈ) _ _ _ _ 
+
 -- data.real.ereal
 instance : densely_ordered ereal := with_bot.densely_ordered
 
