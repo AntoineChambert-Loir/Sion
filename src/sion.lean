@@ -66,14 +66,12 @@ namespace ereal_sion
 variable (f : E → F → ereal) 
 
 /-- The trivial minimax inequality -/
-lemma sup_inf_le_inf_sup : 
-supr (λ y : Y, infi (λ x : X, f x y)) ≤ infi (λ x : X, supr (λ y : Y, f x y)) := 
+lemma supr₂_infi₂_le_infi₂_supr₂ : 
+(⨆ y ∈ Y, ⨅ x ∈ X, f x y) ≤ (⨅ x ∈ X, ⨆ y ∈ Y, f x y) :=
 begin
-  rw supr_le_iff,
-  rintro ⟨y, hy⟩,
-  rw le_infi_iff,
-  rintro ⟨x, hx⟩,
-  exact le_trans (infi_le _ (⟨x,hx⟩ : X)) (le_supr (f x ∘ coe) (⟨y, hy⟩ : Y)),
+  rw supr₂_le_iff, intros y hy,
+  rw le_infi₂_iff, intros x hx, 
+  exact infi₂_le_of_le x hx (le_supr₂_of_le y hy (le_refl _)),
 end
 
 variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
@@ -94,11 +92,11 @@ include hfy cY hfy' hfx ne_X cX hfx'
 include kX
 
 lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
-  {t : ℝ} (ht : (t : ereal) < ⨅ (x : X), (f x y1) ⊔ (f x y2)) :
-  ∃ y0 ∈ Y, (t : ereal) < infi (λ x : X, f x y0) := 
+  {t : ereal} (ht : t < ⨅ (x : X), (f x y1) ⊔ (f x y2)) :
+  ∃ y0 ∈ Y, t < infi (λ x : X, f x y0) := 
 begin
   by_contra' hinfi_le,
-  obtain ⟨t' : ereal, htt' : ↑t < t', ht' : t' < ⨅ (x : X), f x y1 ⊔ f x y2⟩ := 
+  obtain ⟨t' : ereal, htt' : t < t', ht' : t' < ⨅ (x : X), f x y1 ⊔ f x y2⟩ := 
     exists_between ht,
 --  let Z := segment ℝ y1 y2,
 --  have hsegment_le : segment ℝ y1 y2 ⊆ Y := cY.segment_subset hy1 hy2, 
@@ -292,11 +290,11 @@ end
 
 
 lemma exists_lt_infi_of_lt_infi_of_two' {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
-  {t : ℝ} (ht : (t : ereal) < ⨅ x ∈ X, (f x y1 ⊔ f x y2)) :
-  ∃ y0 ∈ Y, (t : ereal) < ⨅ x ∈ X, f x y0 := 
+  {t : ereal} (ht : t < ⨅ x ∈ X, (f x y1 ⊔ f x y2)) :
+  ∃ y0 ∈ Y, t < ⨅ x ∈ X, f x y0 := 
 begin
   by_contra' hinfi_le,
-  obtain ⟨t' : ereal, htt' : ↑t < t', ht' : t' < ⨅ x ∈ X, f x y1 ⊔ f x y2⟩ := 
+  obtain ⟨t' : ereal, htt' : t < t', ht' : t' < ⨅ x ∈ X, f x y1 ⊔ f x y2⟩ := 
     exists_between ht,
 --  let Z := segment ℝ y1 y2,
 --  have hsegment_le : segment ℝ y1 y2 ⊆ Y := cY.segment_subset hy1 hy2, 
@@ -584,8 +582,8 @@ begin
 end
  -/
 
-lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ℝ} (ht : (t : ereal) < ⨅ x ∈ X, ⨆ y ∈ s, f x y) :
-  s ⊆ Y → ∃ y0 ∈ Y,  (t : ereal) < ⨅ x ∈ X, f x y0 :=
+lemma exists_lt_infi_of_lt_infi_of_finite {s : set F} (hs : s.finite) {t : ereal} (ht : t < ⨅ x ∈ X, ⨆ y ∈ s, f x y) :
+  s ⊆ Y → ∃ y0 ∈ Y,  t < ⨅ x ∈ X, f x y0 :=
 begin
   revert X, 
 --  
@@ -683,9 +681,36 @@ begin
   { intros x, simp only [mem_sep_iff], exact and.elim_left, },
 end
 
-theorem minimax : 
-infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 
-sorry
+example {a b : ℝ} : a ≤ b ↔  ∀ (c : ℝ), c < a → c < b :=
+begin
+exact forall_lt_iff_le.symm,
+end
+
+theorem minimax : (⨅ x ∈ X, ⨆ y ∈ Y, f x y) = ⨆ y ∈ Y, ⨅ x ∈ X, f x y := 
+begin
+  apply le_antisymm,
+  { rw ← forall_lt_iff_le, 
+    intros t ht, 
+    let X' : F → set E := λ y, { x ∈ X | f x y ≤ t },
+    suffices hs : ∃ (s : set F), s ⊆ Y ∧ s.finite ∧ (⨅ y ∈ s, X' y) = ∅, 
+    obtain ⟨s, hsY, hs, hes⟩ := hs, 
+    suffices hst : t < ⨅ (x : E) (H : x ∈ X), ⨆ (y : F) (H : y ∈ s), f x y,
+    obtain ⟨y0, hy0, ht0⟩ :=  exists_lt_infi_of_lt_infi_of_finite 
+      X ne_X cX kX Y cY f hfx hfx' hfy hfy' hs hst hsY,
+    apply lt_of_lt_of_le ht0,
+    apply le_supr₂_of_le y0 hy0 (le_refl _),
+
+    { -- hst
+      
+      sorry, },
+    suffices kX' : ∀ y ∈ Y, is_compact (X' y),
+    suffices eX' : (⨅ y ∈ Y, (X' y)) = ∅,
+    
+    sorry,
+    sorry,
+    sorry },
+  { exact supr₂_infi₂_le_infi₂_supr₂ X Y f, },
+end
 
 end ereal_sion
 end ereal
