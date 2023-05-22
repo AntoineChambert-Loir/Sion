@@ -630,7 +630,7 @@ begin
         refine (infi₂_le_of_le a ha') (le_refl _), },
       { simp only [mem_sep_iff, not_and, not_le] at ha', 
         exact lt_of_lt_of_le (ha' ha) (le_sup_left), },
-      { apply lower_semicontinuous_on_sup, 
+      { apply lower_semicontinuous_on.sup, 
         exact hfy b hb, exact hfy y1 hy1, }, },
     { intros x hx', exact hfx x (hX'X hx'), },
     { intros x hx', exact hfx' x (hX'X hx'), },

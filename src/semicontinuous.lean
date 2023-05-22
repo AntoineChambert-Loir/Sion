@@ -1,5 +1,4 @@
 import topology.semicontinuous
-
 import topology.order.lower_topology
 
 section semicontinuity
@@ -52,150 +51,168 @@ lemma is_total.directed {α : Type*} {ι : Sort*} (r : α → α → Prop) [is_t
 
 section linear_order
 
-variables {β α : Type*} [topological_space α] [topological_space β] {f : α → β}
+universes u v
+variables {α : Type u} {β : Type v} [topological_space α] [topological_space β] {f : α → β}
 variables [linear_order β] [order_closed_topology β] 
 
 section lower_semicontinuous
 
-lemma lower_semicontinuous_within_at_sup {g : α → β} (s : set α) (a : α)
+lemma lower_semicontinuous_within_at.sup {g : α → β} {s : set α} {a : α}
   (hf : lower_semicontinuous_within_at f s a) (hg : lower_semicontinuous_within_at g s a) :
   lower_semicontinuous_within_at (λ x, f x ⊔ g x) s a :=
 begin
   intros b hb, 
   simp only [lt_sup_iff] at hb ⊢,  
   cases hb with hb hb, 
-  refine eventually.mp (hf b hb) (eventually_of_forall (λ x hx, or.intro_left _ hx)), 
-  refine eventually.mp (hg b hb) (eventually_of_forall (λ x hx, or.intro_right _ hx)), 
+  { filter_upwards [hf b hb] with x using or.intro_left _ },
+  { filter_upwards [hg b hb] with x using or.intro_right _ }
 end
 
-lemma lower_semicontinuous_at_sup {g : α → β} (a : α)
+lemma lower_semicontinuous_at.sup {g : α → β} {a : α}
   (hf : lower_semicontinuous_at f a) (hg : lower_semicontinuous_at g a) :
   lower_semicontinuous_at (λ x, f x ⊔ g x) a :=
 begin
-  intros b hb, 
-  simp only [lt_sup_iff] at hb,  
-  cases hb with hb hb, 
-  refine eventually.mp (hf b hb) (eventually_of_forall
-    (λ x hx, lt_of_lt_of_le hx (le_sup_left))), 
-  refine eventually.mp (hg b hb) (eventually_of_forall
-    (λ x hx, lt_of_lt_of_le hx (le_sup_right))),
+  rw [← lower_semicontinuous_within_at_univ_iff] at *,
+  exact hf.sup hg
 end
 
-lemma lower_semicontinuous_on_sup {s : set α} {g : α → β}
+lemma lower_semicontinuous_on.sup {s : set α} {g : α → β}
   (hf : lower_semicontinuous_on f s) (hg : lower_semicontinuous_on g s) :
-  lower_semicontinuous_on (λ x, f x ⊔ g x) s :=  λ a ha, lower_semicontinuous_within_at_sup s a (hf a ha) (hg a ha)
+  lower_semicontinuous_on (λ x, f x ⊔ g x) s := 
+λ a ha, (hf a ha).sup (hg a ha)
 
-lemma lower_semicontinuous_sup {g : α → β}
+lemma lower_semicontinuous.sup {g : α → β}
   (hf : lower_semicontinuous f) (hg : lower_semicontinuous g) :
   lower_semicontinuous (λ x, f x ⊔ g x) := 
-λ a, lower_semicontinuous_at_sup a (hf a) (hg a)
+λ a, (hf a).sup (hg a)
 
-lemma lower_semicontinuous_within_at_inf {g : α → β} (s : set α) (a : α)
+lemma lower_semicontinuous_within_at.inf {g : α → β} {s : set α} {a : α}
   (hf : lower_semicontinuous_within_at f s a) (hg : lower_semicontinuous_within_at g s a) :
-   lower_semicontinuous_within_at (λ x, f x ⊓ g x) s a :=
+  lower_semicontinuous_within_at (λ x, f x ⊓ g x) s a :=
 begin
   intros b hb, 
   simp only [lt_inf_iff] at hb ⊢, 
   exact eventually.and (hf b hb.1) (hg b hb.2),
 end
 
-lemma lower_semicontinuous_at_inf {g : α → β} (a : α)
+lemma lower_semicontinuous_at.inf {g : α → β} {a : α}
   (hf : lower_semicontinuous_at f a) (hg : lower_semicontinuous_at g a) :
    lower_semicontinuous_at (λ x, f x ⊓ g x) a :=
 begin
-  intros b hb,
-  simp only [lt_inf_iff] at hb ⊢,
-  exact eventually.and (hf b hb.1) (hg b hb.2),
+  rw [← lower_semicontinuous_within_at_univ_iff] at *,
+  exact hf.inf hg
 end
 
-lemma lower_semicontinuous_on_inf {g : α → β} (s : set α)
+lemma lower_semicontinuous_on.inf {g : α → β} {s : set α}
   (hf : lower_semicontinuous_on f s) (hg : lower_semicontinuous_on g s) :
    lower_semicontinuous_on (λ x, f x ⊓ g x) s :=
-λ a ha, lower_semicontinuous_within_at_inf s a (hf a ha) (hg a ha)
+λ a ha, (hf a ha).inf (hg a ha)
 
-lemma lower_semicontinuous_inf {g : α → β} 
+lemma lower_semicontinuous.inf {g : α → β} 
   (hf : lower_semicontinuous f) (hg : lower_semicontinuous g) :
    lower_semicontinuous (λ x, f x ⊓ g x) :=
-λ a, lower_semicontinuous_at_inf a (hf a) (hg a)
+λ a, (hf a).inf (hg a)
 
 -- TODO : add same for upper_semicontinuous
 
 lemma lower_semicontinuous_on_iff_restrict {s : set α} : 
   lower_semicontinuous_on f s ↔
-  lower_semicontinuous (s.restrict f) := sorry
+  lower_semicontinuous (s.restrict f) := 
+begin
+  -- I never remember the name of `set_coe.forall`...
+  rw [lower_semicontinuous_on, lower_semicontinuous, set_coe.forall],
+  refine forall₂_congr (λ a ha, forall₂_congr $ λ b hb, _),
+  rw [nhds_within_eq_map_subtype_coe ha, eventually_map, restrict]
+end
 
 lemma lower_semicontinuous_on_iff_preimage_Ioi {s : set α} :
   lower_semicontinuous_on f s ↔ 
-  ∀ x ∈ s, ∀ b, b < f x →  
-  ∃ (u : set α), is_open u ∧ f ⁻¹' (set.Ioi b) ∩ s = u ∩ s :=
-sorry
+  ∀ b, ∃ (u : set α), is_open u ∧ f ⁻¹' (set.Ioi b) ∩ s = u ∩ s :=
+begin
+  -- weird error when I add `preimage_comp` in the `simp`...
+  simp only [lower_semicontinuous_on_iff_restrict, lower_semicontinuous_iff_is_open_preimage,
+    is_open_induced_iff, restrict_eq],
+  congrm ∀ b : β, ∃ t, _ ∧ _,
+  rw [preimage_comp, subtype.preimage_coe_eq_preimage_coe_iff, eq_comm]
+end
 
-/- This is ridiculously difficult ! -/
 lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
   lower_semicontinuous_on f s ↔ 
   ∀ b, ∃ (v : set α), is_closed v ∧ f ⁻¹' (set.Iic b) ∩ s = v ∩ s :=
 begin
-  split,
-  { intro hf, 
-    intro b, 
-    use closure (f ⁻¹' Iic b ∩ s),
-    simp only [is_closed_closure, true_and],
-    apply subset.antisymm,
-    rintros a ha, exact ⟨subset_closure ha, ha.2⟩, 
-    
-    rintros a ⟨hab, has⟩,
-    apply and.intro _ has,
-    simp only [mem_preimage, mem_Iic], 
-     simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hf, 
-    rw ← not_lt, intro hb,
-    simp only [mem_closure_iff_frequently, mem_preimage, mem_Iic, mem_inter_iff] at hab,
-    apply hab,
-    dsimp, 
-    specialize hf a has b hb,
-    simp only [filter.eventually] at hf ⊢,
-    simp only [nhds_within, filter.mem_inf_iff] at hf, 
-    obtain ⟨u, hu, v, hv, huv⟩ := hf, 
-    simp only [mem_principal] at hv, 
-    simp_rw [not_and_distrib, not_le],
-    rw set.set_of_or, rw huv, 
-    apply filter.mem_of_superset hu, 
-    intros x hx,
-    by_cases hx' : x ∈ s,
-    left, exact ⟨hx, hv hx'⟩,
-    right, exact hx', },
-  { intro hf, 
-    simp only [lower_semicontinuous_on, lower_semicontinuous_within_at], 
-    intros a ha b hb,
-    simp only [filter.eventually, nhds_within, filter.mem_inf_iff],
-    
-    obtain ⟨v, hv_closed, hv⟩ := hf b, 
-    simp only [filter.mem_principal],
-    use (vᶜ ∪ sᶜ),
-    split,
-    apply filter.mem_of_superset,
-
-    apply is_open.mem_nhds , 
-    { rw is_open_compl_iff, exact hv_closed, },
-    { simp only [mem_compl_iff], intro hav, 
-      rw ← not_le at hb, apply hb, 
-      rw ← mem_Iic, rw ← set.mem_preimage, 
-      apply set.inter_subset_left,
-      rw hv, exact ⟨hav, ha⟩, },
-    exact vᶜ.subset_union_left sᶜ,
-
-    use ({ x : α | b < f x} ∪ s), 
-    split, 
-    apply set.subset_union_right,
-
-    rw ← compl_inj_iff,
-    simp only [set.compl_inter, set.compl_union, compl_compl], 
-
-    rw ← hv, 
-    suffices : f ⁻¹' Iic b = { x : α | b < f x }ᶜ,
-    rw this, 
-    rw set.inter_union_compl,
-    ext x, simp only [mem_preimage, mem_Iic, mem_compl_iff, mem_set_of_eq, not_lt], },
+  -- weird error when I add `preimage_comp` in the `simp`...
+  simp only [lower_semicontinuous_on_iff_restrict, lower_semicontinuous_iff_is_closed_preimage,
+    is_closed_induced_iff, restrict_eq],
+  congrm ∀ b : β, ∃ t, _ ∧ _,
+  rw [preimage_comp, subtype.preimage_coe_eq_preimage_coe_iff, eq_comm]
 end
+
+/- This is ridiculously difficult ! -/
+--lemma lower_semicontinuous_on_iff_preimage_Iic {s : set α} :
+--  lower_semicontinuous_on f s ↔ 
+--  ∀ b, ∃ (v : set α), is_closed v ∧ f ⁻¹' (set.Iic b) ∩ s = v ∩ s :=
+--begin
+--  split,
+--  { intro hf, 
+--    intro b, 
+--    use closure (f ⁻¹' Iic b ∩ s),
+--    simp only [is_closed_closure, true_and],
+--    apply subset.antisymm,
+--    rintros a ha, exact ⟨subset_closure ha, ha.2⟩, 
+--    
+--    rintros a ⟨hab, has⟩,
+--    apply and.intro _ has,
+--    simp only [mem_preimage, mem_Iic], 
+--     simp only [lower_semicontinuous_on, lower_semicontinuous_within_at] at hf, 
+--    rw ← not_lt, intro hb,
+--    simp only [mem_closure_iff_frequently, mem_preimage, mem_Iic, mem_inter_iff] at hab,
+--    apply hab,
+--    dsimp, 
+--    specialize hf a has b hb,
+--    simp only [filter.eventually] at hf ⊢,
+--    simp only [nhds_within, filter.mem_inf_iff] at hf, 
+--    obtain ⟨u, hu, v, hv, huv⟩ := hf, 
+--    simp only [mem_principal] at hv, 
+--    simp_rw [not_and_distrib, not_le],
+--    rw set.set_of_or, rw huv, 
+--    apply filter.mem_of_superset hu, 
+--    intros x hx,
+--    by_cases hx' : x ∈ s,
+--    left, exact ⟨hx, hv hx'⟩,
+--    right, exact hx', },
+--  { intro hf, 
+--    simp only [lower_semicontinuous_on, lower_semicontinuous_within_at], 
+--    intros a ha b hb,
+--    simp only [filter.eventually, nhds_within, filter.mem_inf_iff],
+--    
+--    obtain ⟨v, hv_closed, hv⟩ := hf b, 
+--    simp only [filter.mem_principal],
+--    use (vᶜ ∪ sᶜ),
+--    split,
+--    apply filter.mem_of_superset,
+--
+--    apply is_open.mem_nhds , 
+--    { rw is_open_compl_iff, exact hv_closed, },
+--    { simp only [mem_compl_iff], intro hav, 
+--      rw ← not_le at hb, apply hb, 
+--      rw ← mem_Iic, rw ← set.mem_preimage, 
+--      apply set.inter_subset_left,
+--      rw hv, exact ⟨hav, ha⟩, },
+--    exact vᶜ.subset_union_left sᶜ,
+--
+--    use ({ x : α | b < f x} ∪ s), 
+--    split, 
+--    apply set.subset_union_right,
+--
+--    rw ← compl_inj_iff,
+--    simp only [set.compl_inter, set.compl_union, compl_compl], 
+--
+--    rw ← hv, 
+--    suffices : f ⁻¹' Iic b = { x : α | b < f x }ᶜ,
+--    rw this, 
+--    rw set.inter_union_compl,
+--    ext x, simp only [mem_preimage, mem_Iic, mem_compl_iff, mem_set_of_eq, not_lt], },
+--end
 
 /-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
 theorem lower_semicontinuous.exists_forall_le_of_is_compact {s : set α} 
@@ -252,13 +269,13 @@ theorem upper_semicontinuous.exists_forall_ge_of_is_compact {s : set α}
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : upper_semicontinuous_on f s): 
   ∃ (a ∈ s), ∀ x ∈ s, f x ≤ f a := 
-@lower_semicontinuous.exists_forall_le_of_is_compact (βᵒᵈ) _ _ _ _ _ _ s ne_s hs hf
+@lower_semicontinuous.exists_forall_le_of_is_compact _ (βᵒᵈ) _ _ _ _ _ s ne_s hs hf
 
 /-- An upper semicontinuous function is bounded above on a compact set. -/
 lemma upper_semicontinuous.bdd_above_of_is_compact [nonempty β] {s : set α}
   (hf : upper_semicontinuous_on f s) (hs : is_compact s): 
   bdd_above (f '' s) := 
-@lower_semicontinuous.bdd_below_of_is_compact (βᵒᵈ) _ _ _ _ _ _ _ s hs hf
+@lower_semicontinuous.bdd_below_of_is_compact _ (βᵒᵈ) _ _ _ _ _ _ s hs hf
 
 end upper_semicontinuous
 
@@ -314,7 +331,7 @@ begin
   intros j J hjJ hJ hrec hf,
   suffices : ∀ x, (⨆ (i : ι) (H : i ∈ insert j J), f i x) = (f j x) ⊔ (⨆ i ∈ J, f i x), 
   rw funext this,
-  apply lower_semicontinuous_within_at_sup s a (hf j (set.mem_insert j J)),
+  apply lower_semicontinuous_within_at.sup (hf j (set.mem_insert j J)),
   apply hrec,
   intros i hi, exact hf i (set.mem_insert_of_mem j hi),
   intro x,
