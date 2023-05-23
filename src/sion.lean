@@ -288,6 +288,7 @@ begin
   exact convex.is_preconnected (convex_segment y1 y2),
 end
 
+#check infi₂_le_of_le
 
 lemma exists_lt_infi_of_lt_infi_of_two' {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
   {t : ereal} (ht : t < ⨅ x ∈ X, (f x y1 ⊔ f x y2)) :
@@ -333,16 +334,11 @@ begin
   { intros u z hz, 
     exact (hfy' z hz).is_preconnected_preimage },
   have hC_disj : disjoint (C t' y1) (C t' y2), 
-  { --  from set.disjoint_iff.mpr (λ x hx, not_lt_of_le (infi_le_of_le x $ sup_le_iff.mpr hx) ht'),
-    -- marchait avant que je change en ⨅ x ∈ X…… 
-    rw set.disjoint_iff, 
-    rintro ⟨x, hx⟩, 
-    simp only [mem_inter_iff, mem_preimage, function.comp_app, subtype.coe_mk, mem_Iic, mem_empty_iff_false, and_imp],
-    intros hxy1 hxy2, 
-    rw ← not_le at ht', apply ht', 
-    refine infi₂_le_of_le x hx _, 
-    simp only [sup_le_iff], 
-    exact ⟨hxy1, hxy2⟩, },
+  --  from set.disjoint_iff.mpr (λ x hx, not_lt_of_le (infi_le_of_le x $ sup_le_iff.mpr hx) ht'),
+  -- marchait avant que je change en ⨅ x ∈ X…… 
+  { refine set.disjoint_iff.mpr (λ (x : X) hx, not_lt_of_le (infi₂_le_of_le (x : E) _ _) ht'),
+    { exact x.2 },
+    { exact sup_le_iff.mpr hx } },
   
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, 
   { intros z hz x hx, 
