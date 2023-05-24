@@ -353,13 +353,50 @@ begin
       apply is_preconnected_iff_subset_of_disjoint_closed.mp (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)) _ _
       (hC_closed _ hy1) (hC_closed _ hy2) (hC_subset _ hz),
       rw [set.disjoint_iff_inter_eq_empty.mp hC_disj, set.inter_empty], },
-
+  have hC_subset_xor : ∀ z ∈ segment ℝ y1 y2, xor (C t' z ⊆ C t' y1) (C t' z ⊆ C t' y2), 
+  { sorry },
 
   let J1 := {z : segment ℝ y1 y2 | C t z ⊆ C t' y1},
   -- do we really need this ? (I can't do without it)
   have mem_J1_iff : ∀ (z : segment ℝ y1 y2), z ∈ J1 ↔ C t z ⊆ C t' y1,
   { intro z, refl, },
   
+  have hJ1_closed : is_closed J1, 
+  { rw is_closed_iff_cluster_pt, 
+    intros y h x hx, 
+    replace hfx : upper_semicontinuous (λ y' : segment ℝ y1 y2, f x y'),
+      sorry,
+    suffices : ∃ z ∈ J1, x ∈ C t' (z : F), 
+    obtain ⟨z, hz, hxz⟩ := this, 
+    suffices : C t' z ⊆ C t' y1, 
+      exact this hxz, 
+    
+    apply or.resolve_right (hC_subset_or z z.2),
+    intro hz2, 
+
+    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 z.2)),
+    rw ← (disjoint_iff_inter_eq_empty.mp hC_disj), 
+    apply set.subset_inter hz, 
+    exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
+
+    -- The first goal is to rewrite hfy (lsc of (f ⬝ y)) into an ∀ᶠ form
+    simp only [upper_semicontinuous, upper_semicontinuous_at] at hfx,
+    specialize hfx y t' (lt_of_le_of_lt hx htt'), 
+
+    rw [cluster_pt_principal_iff_frequently] at h,
+    
+    suffices this : ∀ᶠ (z : segment ℝ y1 y2) in nhds y,
+      (z ∈ J1) → (x ∈ C t' z ∧ z ∈ J1), 
+    obtain ⟨z, hxz, hxz'⟩ := filter.frequently.exists (filter.frequently.mp h this), 
+    exact ⟨z, ⟨hxz', hxz⟩⟩,
+
+    { -- this
+      apply filter.eventually.mp hfx, 
+      apply filter.eventually_of_forall,
+      intros z hzt',
+      rintro hz,
+      exact ⟨le_of_lt hzt', hz⟩, }, },-- (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'), },
+
   have hJ1_closed : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
     intros y h x hx, 

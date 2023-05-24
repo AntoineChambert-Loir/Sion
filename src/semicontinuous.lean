@@ -264,6 +264,11 @@ end lower_semicontinuous
 
 section upper_semicontinuous
 
+lemma upper_semicontinuous_on_iff_restrict {s : set α} : 
+  upper_semicontinuous_on f s ↔
+  upper_semicontinuous (s.restrict f) := 
+@lower_semicontinuous_on_iff_restrict _ (βᵒᵈ) _ _ _ _ _ _
+
 /-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
 theorem upper_semicontinuous.exists_forall_ge_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
