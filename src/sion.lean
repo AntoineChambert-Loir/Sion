@@ -91,35 +91,30 @@ include hfy cY hfy' hfx ne_X cX hfx'
 
 include kX
 
-lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y )
+---- TODO: trouver un meilleur nom :)
+---- penser `p := C t z ⊆ A`, `p' := C t' z ⊆ A`, `q := C t z ⊆ B`, `q' := C t' z ⊆ B`
+--lemma logic_lemma {p p' q q' : Prop} (hp : p' → p) (hq : q' → q) (h : xor p' q')
+
+lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y)
   {t : ereal} (ht : t < ⨅ x ∈ X, (f x y1 ⊔ f x y2)) :
   ∃ y0 ∈ Y, t < ⨅ x ∈ X, f x y0 := 
 begin
   by_contra' hinfi_le,
   obtain ⟨t' : ereal, htt' : t < t', ht' : t' < ⨅ x ∈ X, f x y1 ⊔ f x y2⟩ := 
     exists_between ht,
---  let Z := segment ℝ y1 y2,
---  have hsegment_le : segment ℝ y1 y2 ⊆ Y := cY.segment_subset hy1 hy2, 
 
   let C : ereal → F → set X := λ u z, ((λ x, f x z) ∘ coe) ⁻¹' (Iic u), 
   have mem_C_iff : ∀ u z (x : X), x ∈ C u z ↔ f x z ≤ u,
   { intros u z x, refl, },
-  --  λ u z, set.preimage (λ x, f x z)  (set.Iic u) ∩ X, 
-  /- On se bagarre entre la topologie ambiante
-  et les topologies induites sur X (compact convexe) ou sur segment ℝ y1 y2 
-  L'une ou l'autre des définitions est confortable.
-  -/
+
   have hC : ∀ u v z, u ≤ v → C u z ⊆ C v z, 
   { intros u v z h,
-    -- C'est cosmétique, pas besoin de déplier les définitions
-    -- simp only [C], 
-    -- intro x, simp only [set.mem_sep_iff],
     rintro x hxu, exact (le_trans hxu h) } ,
 
-    -- Uses that X is compact and nonempty !
+  -- Uses that X is compact and nonempty !
   have hC_ne : ∀ z ∈ Y, (C t z).nonempty,
   { intros z hz,
-    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_X kX (hfy z hz), 
+    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous_on.exists_forall_le_of_is_compact ne_X kX (hfy z hz), 
     use ⟨x, hx⟩,
     rw [mem_C_iff, subtype.coe_mk],
     refine le_trans _ (hinfi_le z hz),
@@ -144,7 +139,6 @@ begin
   have hC_subset : ∀ z ∈ segment ℝ y1 y2, C t' z ⊆ C t' y1 ∪ C t' y2, 
   { intros z hz x hx, 
     simp only [set.mem_union, mem_C_iff, ← inf_le_iff], 
--- was AD:    change (_ ≤ _) ∨ (_ ≤ _), rw ← inf_le_iff,
     specialize hfx' x x.2 (f x y1 ⊓ f x y2),
     rw convex_iff_segment_subset at hfx', 
     specialize hfx' ⟨hy1, inf_le_left⟩ ⟨hy2, inf_le_right⟩ hz,
@@ -154,9 +148,10 @@ begin
       apply is_preconnected_iff_subset_of_disjoint_closed.mp (hC_preconnected _ (cY.segment_subset hy1 hy2 hz)) _ _
       (hC_closed _ hy1) (hC_closed _ hy2) (hC_subset _ hz),
       rw [set.disjoint_iff_inter_eq_empty.mp hC_disj, set.inter_empty], },
-  have hC_subset_xor : ∀ z ∈ segment ℝ y1 y2, xor (C t' z ⊆ C t' y1) (C t' z ⊆ C t' y2), 
-  { sorry },
+  --have hC_subset_xor : ∀ z ∈ segment ℝ y1 y2, xor (C t' z ⊆ C t' y1) (C t' z ⊆ C t' y2), 
+  --{ sorry },
 
+  have segment_subset : segment ℝ y1 y2 ⊆ Y := convex_iff_segment_subset.mp cY hy1 hy2,
   let J1 := {z : segment ℝ y1 y2 | C t z ⊆ C t' y1},
   -- do we really need this ? (I can't do without it)
   have mem_J1_iff : ∀ (z : segment ℝ y1 y2), z ∈ J1 ↔ C t z ⊆ C t' y1,
@@ -164,9 +159,15 @@ begin
   
   have hJ1_closed : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
+    -- Let `y` be a cluster point of `J1`, let's show it's in `J1`, i.e `C t y ⊆ C t' y1`.
+    -- Let `x ∈ C t y`, and let's find some `z ∈ J1` such that `x ∈ C t z ⊆ C t' y1`.
     intros y h x hx, 
+
     replace hfx : upper_semicontinuous (λ y' : segment ℝ y1 y2, f x y'),
-      sorry,
+    { rw ← upper_semicontinuous_on_univ_iff,
+      exact (hfx x x.2).comp continuous_subtype_coe.continuous_on 
+        (λ y' _, segment_subset y'.2) },
+    
     suffices : ∃ z ∈ J1, x ∈ C t' (z : F), 
     obtain ⟨z, hz, hxz⟩ := this, 
     suffices : C t' z ⊆ C t' y1, 
@@ -175,7 +176,7 @@ begin
     apply or.resolve_right (hC_subset_or z z.2),
     intro hz2, 
 
-    apply set.nonempty.not_subset_empty (hC_ne z  ((convex_iff_segment_subset.mp cY) hy1 hy2 z.2)),
+    apply set.nonempty.not_subset_empty (hC_ne z (segment_subset z.2)),
     rw ← (disjoint_iff_inter_eq_empty.mp hC_disj), 
     apply set.subset_inter hz, 
     exact subset_trans (hC t t' z (le_of_lt htt')) hz2, 
@@ -196,7 +197,7 @@ begin
       apply filter.eventually_of_forall,
       intros z hzt',
       rintro hz,
-      exact ⟨le_of_lt hzt', hz⟩, }, },-- (cY.segment_subset hy1 hy2 y.prop) t' (lt_of_le_of_lt hx htt'), },
+      exact ⟨le_of_lt hzt', hz⟩ } },
 
   have hJ1_closed : is_closed J1, 
   { rw is_closed_iff_cluster_pt, 
@@ -440,7 +441,7 @@ begin
     intro h, 
     rw set.eq_empty_iff_forall_not_mem  at X'_e,
     
-    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_X kX (hfy b hb), 
+    obtain ⟨x, hx, hx_le⟩ := lower_semicontinuous_on.exists_forall_le_of_is_compact ne_X kX (hfy b hb), 
     specialize X'_e x, 
     apply X'_e, simp only [set.mem_sep_iff], 
     exact ⟨hx, le_trans (le_infi₂_iff.mpr hx_le) h⟩, },
@@ -453,10 +454,10 @@ begin
   { 
     specialize hrec X' X'_ne cX' kX', 
     obtain ⟨y1, hy1, hty1⟩ := hrec _ _ _ _ _ _,
-    { refine exists_lt_infi_of_lt_infi_of_two' X ne_X cX kX Y cY f hfx hfx' hfy hfy' hb hy1 _, 
+    { refine exists_lt_infi_of_lt_infi_of_two X ne_X cX kX Y cY f hfx hfx' hfy hfy' hb hy1 _, 
 
       suffices : lower_semicontinuous_on (λ x, f x b ⊔ f x y1) X,
-      obtain ⟨a, ha, hfa_eq_inf⟩ := lower_semicontinuous.exists_infi_of_is_compact ne_X kX this,
+      obtain ⟨a, ha, hfa_eq_inf⟩ := lower_semicontinuous_on.exists_infi_of_is_compact ne_X kX this,
       rw ← hfa_eq_inf, 
       by_cases ha' : a ∈ X',
       { refine lt_of_lt_of_le hty1 _, 
@@ -537,7 +538,7 @@ begin
 
     { -- hst
       suffices hlsc : lower_semicontinuous_on (λ x, ⨆ y ∈ s, f x y) X, 
-      obtain ⟨a, ha, ha'⟩ := lower_semicontinuous.exists_infi_of_is_compact ne_X kX hlsc,
+      obtain ⟨a, ha, ha'⟩ := lower_semicontinuous_on.exists_infi_of_is_compact ne_X kX hlsc,
       rw ← ha', dsimp, 
       rw ← not_le, 
       rw supr₂_le_iff, 

@@ -239,7 +239,7 @@ end
 --end
 
 /-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
-theorem lower_semicontinuous.exists_forall_le_of_is_compact {s : set α} 
+theorem lower_semicontinuous_on.exists_forall_le_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : lower_semicontinuous_on f s) : 
   ∃ (a ∈ s), ∀ x ∈ s, f a ≤ f x := 
@@ -274,13 +274,13 @@ begin
 end
 
 /-- A lower semicontinuous function is bounded above on a compact set. -/
-lemma lower_semicontinuous.bdd_below_of_is_compact [nonempty β] {s : set α} (hs : is_compact s) (hf : lower_semicontinuous_on f s): 
+lemma lower_semicontinuous_on.bdd_below_of_is_compact [nonempty β] {s : set α} (hs : is_compact s) (hf : lower_semicontinuous_on f s): 
   bdd_below (f '' s) := 
 begin
   cases s.eq_empty_or_nonempty,
   { rw h, simp only [set.image_empty],
     exact bdd_below_empty },
-  { obtain ⟨a, ha, has⟩ := lower_semicontinuous.exists_forall_le_of_is_compact h hs hf, 
+  { obtain ⟨a, ha, has⟩ := lower_semicontinuous_on.exists_forall_le_of_is_compact h hs hf, 
     use f a, rintros b ⟨x, hx, rfl⟩, exact has x hx },
 end
 
@@ -288,23 +288,47 @@ end lower_semicontinuous
 
 section upper_semicontinuous
 
+lemma upper_semicontinuous_at.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {x : γ} (hf : upper_semicontinuous_at f (g x))
+  (hg : continuous_at g x) :
+  upper_semicontinuous_at (f ∘ g) x :=
+λ b hb, hg.eventually (hf b hb)
+
+lemma upper_semicontinuous.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} (hf : upper_semicontinuous f)
+  (hg : continuous g) :
+  upper_semicontinuous (f ∘ g) :=
+λ x, (hf (g x)).comp hg.continuous_at
+
+lemma upper_semicontinuous_within_at.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {s : set γ} {t : set α} {x : γ} (hf : upper_semicontinuous_within_at f t (g x))
+  (hg : continuous_within_at g s x) (hg' : maps_to g s t) :
+  upper_semicontinuous_within_at (f ∘ g) s x :=
+λ b hb, (hg.tendsto_nhds_within hg').eventually (hf b hb)
+
+lemma upper_semicontinuous_on.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {s : set γ} {t : set α} (hf : upper_semicontinuous_on f t)
+  (hg : continuous_on g s) (hg' : maps_to g s t) :
+  upper_semicontinuous_on (f ∘ g) s :=
+λ x hx, (hf (g x) (hg' hx)).comp (hg x hx) hg'
+
 lemma upper_semicontinuous_on_iff_restrict {s : set α} : 
   upper_semicontinuous_on f s ↔
   upper_semicontinuous (s.restrict f) := 
 @lower_semicontinuous_on_iff_restrict _ (βᵒᵈ) _ _ _ _ _ _
 
 /-- An upper semicontinuous function attains its upper bound on a nonempty compact set -/
-theorem upper_semicontinuous.exists_forall_ge_of_is_compact {s : set α} 
+theorem upper_semicontinuous_on.exists_forall_ge_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : upper_semicontinuous_on f s): 
   ∃ (a ∈ s), ∀ x ∈ s, f x ≤ f a := 
-@lower_semicontinuous.exists_forall_le_of_is_compact _ (βᵒᵈ) _ _ _ _ _ s ne_s hs hf
+@lower_semicontinuous_on.exists_forall_le_of_is_compact _ (βᵒᵈ) _ _ _ _ _ s ne_s hs hf
 
 /-- An upper semicontinuous function is bounded above on a compact set. -/
-lemma upper_semicontinuous.bdd_above_of_is_compact [nonempty β] {s : set α}
+lemma upper_semicontinuous_on.bdd_above_of_is_compact [nonempty β] {s : set α}
   (hf : upper_semicontinuous_on f s) (hs : is_compact s): 
   bdd_above (f '' s) := 
-@lower_semicontinuous.bdd_below_of_is_compact _ (βᵒᵈ) _ _ _ _ _ _ s hs hf
+@lower_semicontinuous_on.bdd_below_of_is_compact _ (βᵒᵈ) _ _ _ _ _ _ s hs hf
 
 end upper_semicontinuous
 
@@ -316,12 +340,12 @@ variables {β α : Type*} [topological_space α] [topological_space β] {f : α 
 variables [complete_linear_order β] [order_closed_topology β] 
 
 /-- A lower semicontinuous function attains its lower bound on a nonempty compact set -/
-theorem lower_semicontinuous.exists_infi_of_is_compact {s : set α} 
+theorem lower_semicontinuous_on.exists_infi_of_is_compact {s : set α} 
   (ne_s : s.nonempty) (hs : is_compact s)
   (hf : lower_semicontinuous_on f s) : 
   ∃ (a ∈ s), f a = ⨅ x ∈ s, f x := 
 begin
-  obtain ⟨a, ha, ha_le⟩ := lower_semicontinuous.exists_forall_le_of_is_compact ne_s hs hf,
+  obtain ⟨a, ha, ha_le⟩ := lower_semicontinuous_on.exists_forall_le_of_is_compact ne_s hs hf,
   use a, apply and.intro ha,
   apply le_antisymm, 
   rw le_infi₂_iff, intros x hx, exact ha_le x hx,
