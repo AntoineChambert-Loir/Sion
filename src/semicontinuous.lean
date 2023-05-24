@@ -115,6 +115,30 @@ lemma lower_semicontinuous.inf {g : α → β}
 
 -- TODO : add same for upper_semicontinuous
 
+lemma lower_semicontinuous_at.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {x : γ} (hf : lower_semicontinuous_at f (g x))
+  (hg : continuous_at g x) :
+  lower_semicontinuous_at (f ∘ g) x :=
+λ b hb, hg.eventually (hf b hb)
+
+lemma lower_semicontinuous.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} (hf : lower_semicontinuous f)
+  (hg : continuous g) :
+  lower_semicontinuous (f ∘ g) :=
+λ x, (hf (g x)).comp hg.continuous_at
+
+lemma lower_semicontinuous_within_at.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {s : set γ} {t : set α} {x : γ} (hf : lower_semicontinuous_within_at f t (g x))
+  (hg : continuous_within_at g s x) (hg' : maps_to g s t) :
+  lower_semicontinuous_within_at (f ∘ g) s x :=
+λ b hb, (hg.tendsto_nhds_within hg').eventually (hf b hb)
+
+lemma lower_semicontinuous_on.comp {γ : Type*} [topological_space γ] 
+  {g : γ → α} {s : set γ} {t : set α} (hf : lower_semicontinuous_on f t)
+  (hg : continuous_on g s) (hg' : maps_to g s t) :
+  lower_semicontinuous_on (f ∘ g) s :=
+λ x hx, (hf (g x) (hg' hx)).comp (hg x hx) hg'
+
 lemma lower_semicontinuous_on_iff_restrict {s : set α} : 
   lower_semicontinuous_on f s ↔
   lower_semicontinuous (s.restrict f) := 
