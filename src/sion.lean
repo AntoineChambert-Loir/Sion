@@ -11,8 +11,10 @@ import topology.instances.ereal
 
 ## Statements
 
-`sion_exists` : Let X and Y be convex subsets of topological vector spaces E and F, X being moreover compact, and let
-f : X × Y → ℝ be a function such that 
+`sion_exists` : 
+Let X and Y be convex subsets of topological vector spaces E and F, 
+X being moreover compact, 
+and let f : X × Y → ℝ be a function such that 
 - for all x, f(x, ⬝) is upper semicontinuous and quasiconcave
 - for all y, f(⬝, y) is lower semicontinuous and quasiconvex
 Then inf_x sup_y f(x,y) = sup_y inf_x f(x,y). 
@@ -27,19 +29,21 @@ We follow the proof of Komiya (1988).
 
 ## References
 
-- Neumann, John von (1928). « Zur Theorie der Gesellschaftsspiele ». Mathematische Annalen 100 (1): 295‑320. 
-https://doi.org/10.1007/BF01448847.
+- Neumann, John von (1928). « Zur Theorie der Gesellschaftsspiele ». 
+Mathematische Annalen 100 (1): 295‑320.  https://doi.org/10.1007/BF01448847.
 
-- Sion, Maurice (1958). « On general minimax theorems ». Pacific Journal of Mathematics 8 (1): 171‑76.
+- Sion, Maurice (1958). « On general minimax theorems ». 
+Pacific Journal of Mathematics 8 (1): 171‑76.
 
-- Komiya, Hidetoshi (1988). « Elementary Proof for Sion’s Minimax Theorem ». Kodai Mathematical Journal 11 (1). 
-https://doi.org/10.2996/kmj/1138038812.
+- Komiya, Hidetoshi (1988). « Elementary Proof for Sion’s Minimax Theorem ». 
+Kodai Mathematical Journal 11 (1). https://doi.org/10.2996/kmj/1138038812.
 
 
 ## Comments on the proof
 
 For the moment, the proof is made difficult by the absence of results in mathlib
-pertaining to semicontinuous functions, and possibly to continuity properties of convex functions.
+pertaining to semicontinuous functions, and possibly to continuity properties 
+of convex functions.
 
 One option would be to first do the proof for continuous functions 
 by `sorry`ing all the results that we need in the semicontinuous case. 
@@ -50,13 +54,16 @@ by `sorry`ing all the results that we need in the semicontinuous case.
 open set
 
 variables 
- {E : Type*} [add_comm_group E] [module ℝ E] [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
+ {E : Type*} [add_comm_group E] [module ℝ E] 
+ [topological_space E] [topological_add_group E][has_continuous_smul ℝ E]
 variables 
- {F : Type*} [add_comm_group F] [module ℝ F] [topological_space F] [topological_add_group F] [has_continuous_smul ℝ F]
+ {F : Type*} [add_comm_group F] [module ℝ F] 
+ [topological_space F] [topological_add_group F] [has_continuous_smul ℝ F]
 variables (X : set E) (ne_X : X.nonempty) (cX : convex ℝ X) (kX : is_compact X)
 variables (Y : set F) (ne_Y : Y.nonempty) (cY : convex ℝ Y)
 
-def is_saddle_point_on {β : Type*} [preorder β] (f : E → F → β) {a : E} (ha : a ∈ X) {b : F} (hb : b ∈Y) :=
+def is_saddle_point_on {β : Type*} [preorder β] (f : E → F → β) 
+  {a : E} (ha : a ∈ X) {b : F} (hb : b ∈ Y) :=
 (∀ x ∈ X, f a b ≤ f x b) ∧ (∀ y ∈ Y, f a y ≤ f a b) 
 
 section ereal
@@ -74,8 +81,10 @@ begin
   exact infi₂_le_of_le x hx (le_supr₂_of_le y hy (le_refl _)),
 end
 
-variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
-variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
+variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) 
+  (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
+variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) 
+  (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
 include hfy cY hfy' hfx ne_X cX hfx'
 
@@ -95,7 +104,7 @@ include kX
 ---- penser `p := C t z ⊆ A`, `p' := C t' z ⊆ A`, `q := C t z ⊆ B`, `q' := C t' z ⊆ B`
 --lemma logic_lemma {p p' q q' : Prop} (hp : p' → p) (hq : q' → q) (h : xor p' q')
 
-lemma exists_lt_infi_of_lt_infi_of_two {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y)
+lemma exists_lt_infi_of_lt_infi_of_sup {y1 : F} (hy1 : y1 ∈ Y) {y2 : F} (hy2 : y2 ∈ Y)
   {t : ereal} (ht : t < ⨅ x ∈ X, (f x y1 ⊔ f x y2)) :
   ∃ y0 ∈ Y, t < ⨅ x ∈ X, f x y0 := 
 begin
@@ -132,7 +141,8 @@ begin
   have hC_disj : disjoint (C t' y1) (C t' y2), 
   --  from set.disjoint_iff.mpr (λ x hx, not_lt_of_le (infi_le_of_le x $ sup_le_iff.mpr hx) ht'),
   -- marchait avant que je change en ⨅ x ∈ X…… 
-  { refine set.disjoint_iff.mpr (λ (x : X) hx, not_lt_of_le (infi₂_le_of_le (x : E) _ _) ht'),
+  { refine set.disjoint_iff.mpr 
+      (λ (x : X) hx, not_lt_of_le (infi₂_le_of_le (x : E) _ _) ht'),
     { exact x.2 },
     { exact sup_le_iff.mpr hx } },
   
@@ -454,7 +464,7 @@ begin
   { 
     specialize hrec X' X'_ne cX' kX', 
     obtain ⟨y1, hy1, hty1⟩ := hrec _ _ _ _ _ _,
-    { refine exists_lt_infi_of_lt_infi_of_two X ne_X cX kX Y cY f hfx hfx' hfy hfy' hb hy1 _, 
+    { refine exists_lt_infi_of_lt_infi_of_sup X ne_X cX kX Y cY f hfx hfx' hfy hfy' hb hy1 _, 
 
       suffices : lower_semicontinuous_on (λ x, f x b ⊔ f x y1) X,
       obtain ⟨a, ha, hfa_eq_inf⟩ := lower_semicontinuous_on.exists_infi_of_is_compact ne_X kX this,
@@ -627,11 +637,14 @@ section real
 
 namespace sion 
 
-variable (f : E → F → ℝ) 
+variable (f : E → F → ℝ)
 
-lemma is_bdd_above : bdd_above (set.range (λ (xy : X × Y), f xy.1 xy.2))  := sorry
+variables (hfx : ∀ x ∈ X, upper_semicontinuous_on (λ y : F, f x y) Y) 
+  (hfx' : ∀ x ∈ X, quasiconcave_on ℝ Y (λ y, f x y))
+variables (hfy : ∀ y ∈ Y, lower_semicontinuous_on (λ x : E, f x y) X) 
+  (hfy' : ∀ y ∈ Y, quasiconvex_on ℝ X (λ x, f x y))
 
-lemma is_bdd_below : bdd_below (set.range (λ (xy : X × Y), f xy.1 xy.2)) := sorry 
+include hfy ne_Y cY hfy' hfx ne_X cX kX hfx'
 
 /- The theorem is probably wrong without the additional hypothesis
 that Y is compact. Indeed, if the image of (λ y, f x y) is not bounded above,
@@ -656,20 +669,24 @@ the saddle point exists… -/
 theorem exists_saddle_point : ∃ (a : E) (ha : a ∈ X) (b : F) (hb : b ∈ Y),
   is_saddle_point_on X Y f ha hb := sorry
 
-include ne_X ne_Y
+-- include ne_X ne_Y cX cY kX
 
--- There are some `sorry` because we need to add the proof that the
--- function is bounded on X Y 
+/- There are some `sorry` 
+*  we need to add the proofs that relevant functions are bounded on X Y 
+* We also need to add the proofs that forall `infi` and `supr` appearing in the statement, the corresponding function is indeed bounded from below / from above -/
+
 /-- The minimax theorem, in the inf-sup equals sup-inf form -/
 theorem minimax' : 
 infi (λ x : X, supr (λ y : Y, f x y)) = supr (λ y : Y, infi (λ x : X, f x y)) := 
 begin
   haveI : nonempty X := ne_X.coe_sort,
   haveI : nonempty Y := ne_Y.coe_sort,
+  /- 
   obtain ⟨m, hm⟩ := sion.is_bdd_below X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
   obtain ⟨M, hM⟩ := sion.is_bdd_above X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
   simp only [lower_bounds, upper_bounds, set.mem_range, prod.exists, set_coe.exists, subtype.coe_mk, exists_prop,
   forall_exists_index, and_imp, set.mem_set_of_eq] at hm hM,
+  -/
   apply le_antisymm,
 
   { obtain ⟨a, ha, b, hb, hax, hby⟩ := sion.exists_saddle_point X ne_X cX kX Y ne_Y cY f hfx hfx' hfy hfy',
@@ -677,25 +694,18 @@ begin
     apply le_trans _ this,
     refine le_trans (cinfi_le _ (⟨a, ha⟩ : X)) _, 
     -- bdd_below is not automatic :-(
-    { dsimp only [bdd_below, lower_bounds],
-      use m,
-      simp only [set.mem_range, set_coe.exists, subtype.coe_mk, forall_exists_index, forall_apply_eq_imp_iff₂, set.mem_set_of_eq], 
-      intros x hx,
-      refine le_trans _ (le_csupr _ ⟨b, hb⟩),
-      exact hm x hx b hb rfl, 
-      dsimp only [bdd_above, upper_bounds],
-      use M,
-      simp only [set.mem_range, set_coe.exists, subtype.coe_mk, forall_exists_index, forall_apply_eq_imp_iff₂, set.mem_set_of_eq],
-      intros y hy, exact hM x hx y hy rfl, },
+    sorry, 
     apply csupr_le, 
     rintro ⟨y, hy⟩, exact hby y hy,
-    refine le_trans _ (le_csupr _ (⟨b, hb⟩ : Y)),
-    apply le_cinfi,
-    rintro ⟨x, hx⟩, exact hax x hx,
-    -- bdd_above is not automatic :-( 
-    sorry, },
+    { refine le_trans _ (le_csupr _ (⟨b, hb⟩ : Y)),
+      apply le_cinfi,
+      rintro ⟨x, hx⟩, exact hax x hx,
+      -- bdd_above is not automatic :-( 
+      sorry, }, },
 
-  { apply csupr_le, rintro ⟨y, hy⟩,
+  { -- This is the trivial inequality
+    -- except that we need to check that some stuff is bounded
+    apply csupr_le, rintro ⟨y, hy⟩,
     apply le_cinfi, rintro ⟨x, hx⟩, 
     refine le_trans (cinfi_le _ (⟨x, hx⟩ : X)) _,
     sorry, -- bdd_below is not automatic
